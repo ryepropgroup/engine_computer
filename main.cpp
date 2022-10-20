@@ -7,6 +7,9 @@ using namespace boost;
 using namespace std::chrono_literals;
 
 int main(int argc, char* argv[]) {
+    if(argc!=3){
+        throw std::invalid_argument("No arguments passed!");
+    }
     system::error_code ec;
     asio::io_context ioContext;
     asio::ip::tcp::endpoint endpoint(asio::ip::make_address(argv[1], ec), std::atoi(argv[2]));
@@ -47,9 +50,8 @@ int main(int argc, char* argv[]) {
                 }
             }
         }
-        std::cout<<"PAST IF STATEMENT"<<std::endl;
     }
     catch(system::error_code& ec){
-
+        std::cerr<<ec.what()<<std::endl;
     }
 }
