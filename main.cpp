@@ -44,16 +44,20 @@ int main(int argc, char* argv[]) {
                         serial.close(ec);
                         exit(0);
                     }
-                    asio::write(serial, asio::buffer(message));
                     auto start = std::chrono::high_resolution_clock::now();
+                    asio::write(serial, asio::buffer(message));
+                    auto stop = std::chrono::high_resolution_clock::now();
+                    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop-start);
                     std::cout << "from socket: "<< message << std::endl;
                     std::cout<< "time taken: "<<socketDuration.count()<<" ms"<<std::endl;
+                    auto readStart = std::chrono::high_resolution_clock::now();
                     serial.read_some(asio::buffer(serialBuffer.data(), serialBuffer.size()), ec);
-                    auto stop = std::chrono::high_resolution_clock::now();
+                    auto readStop = std::chrono::high_resolution_clock::now();
+                    auto readDuration = std::chrono::duration_cast<std::chrono::milliseconds>(readStop-readStart);
                     std::string serialMessage{serialBuffer.begin(), serialBuffer.end()};
-                    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop-start);
                     std::cout<< "from serial: "<< serialMessage << std::endl;
-                    std::cout<< "time taken: "<<duration.count()<<" ms"<<std::endl;
+                    std::cout<< "time taken write "<<duration.count()<<" ms"<<std::endl;
+		    std::cout<<" time taken read " << readDuration.count()<<" ms"<<std::endl; 
 //                socket.write_some(asio::buffer(vBuffer));
 
                 }

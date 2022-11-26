@@ -1,0 +1,29 @@
+[33mcommit 97cd6857b1c3967b67009ff53aa37d52f985904d[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: zazu7765 <ohmyzazu@gmail.com>
+Date:   Fri Oct 21 13:01:02 2022 -0400
+
+    timing functions
+
+[33mcommit 34e1a6965d791e60e56fa80d2cb402a04c0abec6[m
+Author: zazu7765 <ohmyzazu@gmail.com>
+Date:   Thu Oct 20 17:15:30 2022 -0400
+
+    fix segmentation fault (no arguments)
+
+[33mcommit 12c2a1115b17aa8a13ea80960c85ddee42eb8fba[m
+Author: zazu7765 <ohmyzazu@gmail.com>
+Date:   Thu Oct 20 16:56:12 2022 -0400
+
+    add serial communication
+
+[33mcommit d92cc1331bfef8adb2d7c83b3b09891da02c03e9[m
+Author: zazu7765 <ohmyzazu@gmail.com>
+Date:   Wed Oct 19 00:32:48 2022 -0400
+
+    remove .idea files
+
+[33mcommit 3f10fca9dbe3845a07edb04dce447c0037a75997[m
+Author: zazu7765 <ohmyzazu@gmail.com>
+Date:   Wed Oct 19 00:32:36 2022 -0400
+
+    basic communication over tcp socket
