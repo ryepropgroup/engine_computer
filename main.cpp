@@ -27,22 +27,24 @@ int main() {
     std::string socket_response;
     std::string serial_response;
     try{
+        std::cout<<"testing testing 123"<<std::endl;
         socket.connect(endpoint,ec);
-        serial.open("/dev/ttyACM1", ec);
+        serial.open("/dev/ttyACM0", ec);
+        std::cout<<"potato"<<std::endl;
+        serial.set_option(serial_port_base::baud_rate(115200));
+        std::cout<<"potato1"<<std::endl;
     for(;;){
-        std::this_thread::sleep_for(1ms);
+        //std::this_thread::sleep_for(1ms);
         socket_response= receive(socket, ec);
-        serial_response = receive(serial, ec);
         if(socket_response.size()>0){
             std::cout<<"socket:"<<socket_response<<std::endl;
-        }
-        if(serial_response.size()>0){
+            serial.write_some(asio::buffer(socket_response),ec);
+            serial_response = receive(serial, ec);
             std::cout<<"serial:"<<serial_response<<std::endl;
         }
         if(socket_response == "quit"){
             break;
         }
-        socket.write_some(asio::buffer(socket_response),ec);
     }
     return 0;
     }
