@@ -1,7 +1,7 @@
 from labjack import ljm
 from time import sleep
 import time
-from matplotlib import pyplot
+# from matplotlib import pyplot
 
 
 sensor_name = input("Enter pressure sensor name: ").upper()
