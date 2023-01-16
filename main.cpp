@@ -2,12 +2,20 @@
 #include <boost/asio.hpp>
 #include <boost/system/error_code.hpp>
 #include <thread>
+#include <boost/thread.hpp>
 #include <chrono>
-
+#include <stdlib.h>
 using namespace boost;
 using namespace boost::asio::ip;
 using namespace std::chrono_literals;
-
+using namespace boost::asio;
+    std::atomic<bool> loopBool(true);
+    system::error_code ec;
+    io_context service;
+    ip::tcp::endpoint endpoint(ip::address::from_string("10.42.0.249"), 65432);
+    
+    std::string socket_response;
+    std::string serial_response;    
 template <typename T> std::string receive(T& connection, system::error_code& ec){
     using namespace std;
     vector<char> buf (1024);
@@ -17,15 +25,7 @@ template <typename T> std::string receive(T& connection, system::error_code& ec)
     return received;
 }
 
-int main() {
-    using namespace boost::asio;
-    system::error_code ec;
-    io_context service;
-    ip::tcp::endpoint endpoint(ip::address::from_string("10.42.0.249"), 65432);
-    ip::tcp::socket socket(service);
-    serial_port serial(service);
-    std::string socket_response;
-    std::string serial_response;
+void connection_manager(ip::tcp::socket& socket, serial_port& serial){
     try{
         std::cout<<"testing testing 123"<<std::endl;
         socket.connect(endpoint,ec);
@@ -33,24 +33,43 @@ int main() {
         std::cout<<"potato"<<std::endl;
         serial.set_option(serial_port_base::baud_rate(115200));
         std::cout<<"potato1"<<std::endl;
-    for(;;){
-        //std::this_thread::sleep_for(1ms);
-        socket_response= receive(socket, ec);
-        if(socket_response.size()>0){
-            std::cout<<"socket:"<<socket_response<<std::endl;
-            serial.write_some(asio::buffer(socket_response),ec);
-            serial_response = receive(serial, ec);
-            std::cout<<"serial:"<<serial_response<<std::endl;
+        while(loopBool){
+            std::this_thread::sleep_for(1ms);
+            socket_response= receive(socket, ec);
+            if(socket_response.size()>0){
+                std::cout<<"socket:"<<socket_response<<std::endl;
+                serial.write_some(asio::buffer(socket_response),ec);
+                serial_response = receive(serial, ec);
+                std::cout<<"serial:"<<serial_response<<std::endl;
+            }
+            if(socket_response == "quit"){
+                loopBool = false;
+            }
         }
-        if(socket_response == "quit"){
-            break;
-        }
-    }
-    return 0;
     }
     catch(system::error_code& ec){
         std::cerr<<ec.value()<<std::endl;
     }
+}
+
+void data_send(ip::tcp::socket& socket, serial_port& serial){
+    while(loopBool){
+    std::string banana = std::to_string(rand() % 10 + 500);
+	socket.write_some(asio::buffer(banana),ec);
+    }
+}
+
+int main() {
+	srand (time(NULL));
+    ip::tcp::socket socket(service);
+    serial_port serial(service);
+    std::thread uno(connection_manager, std::ref(socket),std::ref(serial));
+    std::thread duo(data_send, std::ref(socket), std::ref(serial));
+    duo.join();
+    uno.join();
+    
+    return 0;
+}
 //     asio::ip::tcp::endpoint endpoint(asio::ip::make_address(argv[1], ec), std::atoi(argv[2]));
 //     asio::ip::tcp::socket socket(ioContext);
 //     try {
@@ -106,4 +125,4 @@ int main() {
 //     catch(system::error_code& ec){
 //         std::cerr<<ec.value()<<std::endl;
 //     }
-}
+//}
