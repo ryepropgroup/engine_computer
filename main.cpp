@@ -5,6 +5,8 @@
 #include <boost/thread.hpp>
 #include <chrono>
 #include <stdlib.h>
+#include <jsoncpp/json/json.h>
+#include <time.h>
 using namespace boost;
 using namespace boost::asio::ip;
 using namespace std::chrono_literals;
@@ -12,10 +14,11 @@ using namespace boost::asio;
     std::atomic<bool> loopBool(true);
     system::error_code ec;
     io_context service;
-    ip::tcp::endpoint endpoint(ip::address::from_string("10.42.0.249"), 65432);
+    ip::tcp::endpoint endpoint(ip::address::from_string("172.20.10.10"), 65432);
     
     std::string socket_response;
-    std::string serial_response;    
+    std::string serial_response; 
+       
 template <typename T> std::string receive(T& connection, system::error_code& ec){
     using namespace std;
     vector<char> buf (1024);
@@ -41,7 +44,7 @@ void connection_manager(ip::tcp::socket& socket, serial_port& serial){
                 serial.write_some(asio::buffer(socket_response),ec);
                 serial_response = receive(serial, ec);
                 std::cout<<"serial:"<<serial_response<<std::endl;
-            }
+            }std::to_string(rand() % 10 + 500);
             if(socket_response == "quit"){
                 loopBool = false;
             }
@@ -53,9 +56,26 @@ void connection_manager(ip::tcp::socket& socket, serial_port& serial){
 }
 
 void data_send(ip::tcp::socket& socket, serial_port& serial){
+    using namespace std;
+    string unixtimenow = to_string(chrono::duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count());
+    string filename = unixtimenow += ".csv";
     while(loopBool){
-    std::string banana = std::to_string(rand() % 10 + 500);
-	socket.write_some(asio::buffer(banana),ec);
+        std::this_thread::sleep_for(1ms);
+        vector<string> tojsons = new vector(4);
+        tojsons[0] = to_string(rand() % 10 + 500);
+        string banana2 = to_string(rand() % 10 + 700);
+        string banana3 = to_string(rand() % 10 + 800);
+        string banana4 = to_string(rand() % 10 + 900);
+        Json::Value potato;
+        Json::FastWriter writer;
+        potato["tc"] = "0"+banana;
+        potato["p1"] = "0"+banana2;
+        potato["p2"] = "0"+banana3;
+        potato["p3"] = "0"+banana4;
+        banana = writer.write(potato);
+        // banana = std::to_string(rand() % 10 + 500);
+        std::cout<<filename<<std::endl;
+	// socket.write_some(asio::buffer(banana),ec);
     }
 }
 

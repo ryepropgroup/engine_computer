@@ -27,19 +27,19 @@ int main() {
     for(;;){
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     err = LJM_eWriteNames(handle, NUM_FRAMES, names, aValues,&errorAddress);
-    // err = LJM_eWriteNames(handle, NUM_FRAMES2, names2, aValues2,&errorAddress);
+    err = LJM_eWriteNames(handle, NUM_FRAMES2, names2, aValues2,&errorAddress);
     ErrorCheck(err, "LJM_eWriteNames");
 
     // Call LJM_eReadName to read the serial number from the LabJack.
     err = LJM_eReadName(handle, NAME, &value);
-    // err = LJM_eReadName(handle, NAME2, &value2);
+    err = LJM_eReadName(handle, NAME2, &value2);
     ErrorCheck(err, "LJM_eReadName");
 
-//    printf("eReadName result:\n");
+   printf("eReadName result:\n");
    printf("%s = %f\n", NAME, value);
-    //value2 = (25000*value2);
+    // value2 = (25000*value2);
     // if(value2>max){
-        // max = value2;
+    //     max = value2;
     // };
     // printf("eReadName 2 result:\n");
     // printf("    %s = %f\n", NAME2, value2);
