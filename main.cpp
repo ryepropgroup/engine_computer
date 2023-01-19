@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <boost/asio.hpp>
 #include <boost/system/error_code.hpp>
 #include <thread>
@@ -32,19 +33,19 @@ void connection_manager(ip::tcp::socket& socket, serial_port& serial){
     try{
         std::cout<<"testing testing 123"<<std::endl;
         socket.connect(endpoint,ec);
-        serial.open("/dev/ttyACM0", ec);
+        // serial.open("/dev/ttyACM0", ec);
         std::cout<<"potato"<<std::endl;
-        serial.set_option(serial_port_base::baud_rate(115200));
+        // serial.set_option(serial_port_base::baud_rate(115200));
         std::cout<<"potato1"<<std::endl;
         while(loopBool){
             std::this_thread::sleep_for(1ms);
             socket_response= receive(socket, ec);
             if(socket_response.size()>0){
                 std::cout<<"socket:"<<socket_response<<std::endl;
-                serial.write_some(asio::buffer(socket_response),ec);
-                serial_response = receive(serial, ec);
-                std::cout<<"serial:"<<serial_response<<std::endl;
-            }std::to_string(rand() % 10 + 500);
+                // serial.write_some(asio::buffer(socket_response),ec);
+                // serial_response = receive(serial, ec);
+                // std::cout<<"serial:"<<serial_response<<std::endl;
+            }
             if(socket_response == "quit"){
                 loopBool = false;
             }
@@ -57,26 +58,38 @@ void connection_manager(ip::tcp::socket& socket, serial_port& serial){
 
 void data_send(ip::tcp::socket& socket, serial_port& serial){
     using namespace std;
-    string unixtimenow = to_string(chrono::duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count());
+    string unixtimenow = to_string(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     string filename = unixtimenow += ".csv";
+    ofstream file(filename);
+    file<<"time(unix)"<<","<<"tc"<<","<<"p1"<<","<<"p2"<<","<<"p3"<<endl;
     while(loopBool){
+        unixtimenow = to_string(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
         std::this_thread::sleep_for(1ms);
-        vector<string> tojsons = new vector(4);
+        vector<string> tojsons(4);
         tojsons[0] = to_string(rand() % 10 + 500);
-        string banana2 = to_string(rand() % 10 + 700);
-        string banana3 = to_string(rand() % 10 + 800);
-        string banana4 = to_string(rand() % 10 + 900);
+        tojsons[1] = to_string(rand() % 10 + 700);
+        tojsons[2] = to_string(rand() % 10 + 800);
+        tojsons[3]= to_string(rand() % 10 + 900);
+        file<<unixtimenow<<",";
+        for(string& json: tojsons){
+            while(json.length() < 4){
+                json = "0"+json;
+            }
+            file<<json<<",";
+        }
+        file<<"\n";
         Json::Value potato;
         Json::FastWriter writer;
-        potato["tc"] = "0"+banana;
-        potato["p1"] = "0"+banana2;
-        potato["p2"] = "0"+banana3;
-        potato["p3"] = "0"+banana4;
-        banana = writer.write(potato);
-        // banana = std::to_string(rand() % 10 + 500);
-        std::cout<<filename<<std::endl;
+        cout<<tojsons[0]<<endl;
+        potato["tc"] = tojsons[0];
+        potato["p1"] = tojsons[1];
+        potato["p2"] = tojsons[2];
+        potato["p3"] = tojsons[3];
+        string banana = writer.write(potato);
+        std::cout<<banana<<std::endl;
 	// socket.write_some(asio::buffer(banana),ec);
     }
+    
 }
 
 int main() {
