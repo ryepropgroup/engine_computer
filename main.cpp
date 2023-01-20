@@ -8,18 +8,19 @@
 #include <stdlib.h>
 #include <jsoncpp/json/json.h>
 #include <time.h>
+#include <LabJackM.h>
+#include "./libs/LJM_Utilities.h"
 using namespace boost;
 using namespace boost::asio::ip;
 using namespace std::chrono_literals;
 using namespace boost::asio;
-    std::atomic<bool> loopBool(true);
-    system::error_code ec;
-    io_context service;
-    ip::tcp::endpoint endpoint(ip::address::from_string("172.20.10.10"), 65432);
-    
-    std::string socket_response;
-    std::string serial_response; 
-       
+std::atomic<bool> loopBool(true);
+system::error_code ec;
+io_context service;
+ip::tcp::endpoint endpoint(ip::address::from_string("10.0.0.2"), 65432);    
+std::string socket_response;
+std::string serial_response; 
+
 template <typename T> std::string receive(T& connection, system::error_code& ec){
     using namespace std;
     vector<char> buf (1024);
@@ -56,39 +57,70 @@ void connection_manager(ip::tcp::socket& socket, serial_port& serial){
     }
 }
 
-void data_send(ip::tcp::socket& socket, serial_port& serial){
+int data_send(ip::tcp::socket& socket, serial_port& serial){
     using namespace std;
+    int err, handle;
+    int errorAddress = INITIAL_ERR_ADDRESS;
+    double p1 = 0, p2 = 0, p3 = 0;
+    const char* P1 = {"AIN0"};
+    const char* P2 = {"AIN2"};
+    const char* P3 = {"AIN4"};
+    const char* p1arr[2]={"AIN0_RANGE","AIN0_NEGATIVE_CH"};
+    const char* p2arr[2]={"AIN2_RANGE","AIN2_NEGATIVE_CH"};
+    const char* p3arr[2]={"AIN4_RANGE","AIN4_NEGATIVE_CH"};
+    double p1vals[2]={0.1, 1.0};
+    double p2vals[2]={0.1, 3.0};
+    double p3vals[2]={0.1, 5.0};
     string unixtimenow = to_string(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     string filename = unixtimenow += ".csv";
+    err = LJM_Open(LJM_dtANY, LJM_ctANY, "LJM_idANY", &handle);
+    ErrorCheck(err, "LJM_Open");
     ofstream file(filename);
-    file<<"time(unix)"<<","<<"tc"<<","<<"p1"<<","<<"p2"<<","<<"p3"<<endl;
+    file<<"time(unix)"<<","<<"tc"<<","<<"p1"<<","<<"p2"<<","<<"p3";
     while(loopBool){
+        std::this_thread::sleep_for(500ms);
+        file<<endl;
+        err = LJM_eWriteNames(handle, 2, p1arr, p1vals,&errorAddress);
+        err = LJM_eWriteNames(handle, 2, p2arr, p2vals,&errorAddress);
+        err = LJM_eWriteNames(handle, 2, p3arr, p3vals,&errorAddress);
+        ErrorCheck(err, "LJM_eWriteNames");
+        cout<<"potato2"<<endl;
+
+        err = LJM_eReadName(handle, P1, &p1);
+        err = LJM_eReadName(handle, P2, &p2);
+        err = LJM_eReadName(handle, P3, &p3);
+        ErrorCheck(err, "LJM_eReadName");
+        cout<<"potato3"<<endl;
         unixtimenow = to_string(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-        std::this_thread::sleep_for(1ms);
-        vector<string> tojsons(4);
-        tojsons[0] = to_string(rand() % 10 + 500);
-        tojsons[1] = to_string(rand() % 10 + 700);
-        tojsons[2] = to_string(rand() % 10 + 800);
-        tojsons[3]= to_string(rand() % 10 + 900);
+        vector<string> tojsons(3);
+        cout<<p1<<p2<<p3<<endl;
+        tojsons[0] = to_string(25000*p1);
+        tojsons[1] = to_string(25000*p2);
+        tojsons[2] = to_string(25000*p3);
         file<<unixtimenow<<",";
         for(string& json: tojsons){
             while(json.length() < 4){
                 json = "0"+json;
             }
+            cout<<json<<endl;
+            cout<<"SUCK"<<endl;
             file<<json<<",";
         }
-        file<<"\n";
         Json::Value potato;
         Json::FastWriter writer;
         cout<<tojsons[0]<<endl;
-        potato["tc"] = tojsons[0];
-        potato["p1"] = tojsons[1];
-        potato["p2"] = tojsons[2];
-        potato["p3"] = tojsons[3];
+        cout<<"potato6"<<endl;
+        potato["p1"] = tojsons[0];
+        potato["p2"] = tojsons[1];
+        potato["p3"] = tojsons[2];
         string banana = writer.write(potato);
         std::cout<<banana<<std::endl;
+        std::cout<<"potato7"<<endl;
 	// socket.write_some(asio::buffer(banana),ec);
     }
+    err = LJM_Close(handle);
+    ErrorCheck(err, "LJM_Close");
+    return LJME_NOERROR;
     
 }
 
