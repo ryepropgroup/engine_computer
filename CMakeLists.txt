@@ -11,5 +11,5 @@ elseif(UNIX)
 endif()
 # see https://cmake.org/cmake/help/latest/module/FindBoost.html
 find_package(Boost REQUIRED)
-target_link_libraries(engine_computer ${LIBMODBUS_PATH})
 include_directories(${Boost_INCLUDE_DIR})
+target_link_libraries(engine_computer ${LIBMODBUS_PATH})
