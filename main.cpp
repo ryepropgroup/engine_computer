@@ -24,12 +24,16 @@ void print_p2Name(ljSetup lj) {
     std::cout << lj.p2Name << std::endl;
 }
 
-void run_signal(std::shared_ptr<boost::signals2::signal<void(ljSetup)>> sig){
+void run_signal(std::shared_ptr<boost::signals2::signal<void(ljSetup)>> sig, std::stop_token t){
     ljSetup lj = *new ljSetup();
-    for(int i = 0 ; i < 100; i ++)
+    while(!t.stop_requested())
+    {
         (*sig)(lj);
+    }
+    std::cout<<"done"<<std::endl;
 }
 int main() {
+    using namespace std::chrono_literals;
     // modbus_t *mb;
     // uint16_t tab_reg[32];
     // mb = modbus_new_tcp("", 502);
@@ -37,10 +41,13 @@ int main() {
     // modbus_read_registers(mb, 16386, 5, tab_reg);
     // modbus_close(mb);
     // modbus_free(mb);
-
+    std::stop_source test;
+    std::stop_token token = test.get_token();
     std::shared_ptr<boost::signals2::signal<void(ljSetup)>> testSig(new boost::signals2::signal<void(ljSetup)>);
     testSig->connect(&print_p1Name);
     testSig->connect(&print_p2Name);
-    std::jthread one(run_signal, testSig);
+    std::jthread one(run_signal, testSig, token);
+    std::this_thread::sleep_for(1ms);
+    test.request_stop();
     return 0;
 }
