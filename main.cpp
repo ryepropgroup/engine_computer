@@ -3,6 +3,7 @@
 #include <boost/signals2.hpp>
 #include <thread>
 
+using namespace std::chrono_literals;
 struct ljSetup {
     double p1 = 0, p2 = 0, p3 = 0;
     const char *p1Name = {"AIN0"};
@@ -32,8 +33,12 @@ void run_signal(const boost::signals2::signal<void(ljSetup)> *sig, const std::st
     std::cout << "done" << std::endl;
 }
 
+void stop_func(const std::stop_source *ss){
+    std::this_thread::sleep_for(1ms);
+    ss->request_stop();
+}
+
 int main() {
-    using namespace std::chrono_literals;
     // modbus_t *mb;
     // uint16_t tab_reg[32];
     // mb = modbus_new_tcp("", 502);
@@ -47,7 +52,6 @@ int main() {
     testSig.connect(&print_p1Name);
     testSig.connect(&print_p2Name);
     std::jthread one(run_signal, &testSig, &token);
-    std::this_thread::sleep_for(1ns);
-    test.request_stop();
+    std::jthread two(stop_func, &test);
     return 0;
 }
