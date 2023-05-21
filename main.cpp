@@ -1,7 +1,8 @@
 #include <iostream>
-#include <modbus/modbus-tcp.h>
+//#include <modbus/modbus-tcp.h>
 #include <boost/signals2.hpp>
 #include <thread>
+#include "LJM_Utilities.h"
 
 using namespace std::chrono_literals;
 struct ljSetup {
@@ -15,6 +16,10 @@ struct ljSetup {
     std::array<double, 2> p1Vals = {0.1, 1.0};
     std::array<double, 2> p2Vals = {0.1, 3.0};
     std::array<double, 2> p4Vals = {0.1, 5.0};
+};
+
+struct sd {
+    std::map<std::string, double> sensors{};
 };
 
 void print_p1Name(ljSetup lj) {
@@ -33,7 +38,7 @@ void run_signal(const boost::signals2::signal<void(ljSetup)> *sig, const std::st
     std::cout << "done" << std::endl;
 }
 
-void stop_func(const std::stop_source *ss){
+void stop_func(const std::stop_source *ss) {
     std::this_thread::sleep_for(1ms);
     ss->request_stop();
 }

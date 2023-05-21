@@ -12,4 +12,5 @@ endif()
 # see https://cmake.org/cmake/help/latest/module/FindBoost.html
 find_package(Boost REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
-target_link_libraries(engine_computer ${LIBMODBUS_PATH})
+include_directories("/usr/local/include/")
+target_link_libraries(engine_computer ${LIBMODBUS_PATH} "/usr/local/lib/libLabJackM.dylib")
