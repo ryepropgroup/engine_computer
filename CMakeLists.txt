@@ -2,10 +2,17 @@ cmake_minimum_required(VERSION 3.24)
 project(engine_computer)
 
 set(CMAKE_CXX_STANDARD 20)
-
 add_executable(engine_computer main.cpp)
 include_directories(lib)
+if(APPLE)
+    set(LIBMODBUS_PATH "/opt/homebrew/lib/libmodbus.dylib")
+    set(LABJACK_PATH "/usr/local/lib/libLabJackM.dylib")
+elseif(UNIX)
+    set(LIBMODBUS_PATH "/usr/lib/x86_64-linux-gnu/libmodbus.so")
+    set(LABJACK_PATH "/usr/local/lib/libLabJackM.so")
+endif()
 # see https://cmake.org/cmake/help/latest/module/FindBoost.html
 find_package(Boost REQUIRED)
-
 include_directories(${Boost_INCLUDE_DIR})
+include_directories("/usr/local/include/")
+target_link_libraries(engine_computer ${LIBMODBUS_PATH} ${LABJACK_PATH})
