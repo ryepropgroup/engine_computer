@@ -11,6 +11,7 @@ using namespace std::chrono_literals;
 namespace ba = boost::asio;
 namespace bs = boost::signals2;
 unsigned short PORT = 6969;
+std::mutex coutm;
 
 struct Sensor {
     Sensor(std::string name, std::vector<std::string> params, const std::vector<double> &settings) {
@@ -66,8 +67,10 @@ struct Connection : std::enable_shared_from_this<Connection> {
 private:
     void input() {
         std::string val;
-        if (std::getline(std::istream(&_buf), val))
+        if (std::getline(std::istream(&_buf), val)){
+            std::lock_guard<std::mutex> l(coutm);
             std::cout << val << std::endl;
+        }
     }
 
     bool nq(std::string msg, bool immediate) {
@@ -140,7 +143,8 @@ private:
         auto sess = std::make_shared<Connection>(_acc.get_executor());
         _acc.async_accept(sess->_s, [this, sess](boost::system::error_code ec) {
             auto endpoint = ec ? ba::ip::tcp::endpoint{} : sess->_s.remote_endpoint();
-            std::cout << "Connetion from " << endpoint << " (" << ec.message() << ")" << std::endl;
+            std::lock_guard<std::mutex> l(coutm);
+            std::cout << "Connection from " << endpoint << " (" << ec.message() << ")" << std::endl;
             if (!ec) {
                 auto n = reg(sess);
                 sess->start();
@@ -154,16 +158,16 @@ private:
     bs::signal<void(State const &s)> _emit_event;
 };
 
-void run_signal(const bs::signal<void(State)> *sig, const std::stop_token *t) {
-    State s = *new State();
+void run_signal(const std::stop_token *t, Server *s) {
+    State st = *new State();
     while (!t->stop_requested()) {
-        (*sig)(s);
+        s->emit(st);
     }
-    std::cout << "done" << std::endl;
+    std::lock_guard<std::mutex> l(coutm);
+    std::cout<<"done"<<std::endl;
 }
 
 void stop_func(const std::stop_source *ss) {
-    std::this_thread::sleep_for(1ms);
     ss->request_stop();
 }
 
@@ -175,14 +179,18 @@ int main() {
 //     modbus_read_registers(mb, 16386, 5, tab_reg);
 //     modbus_close(mb);
 //     modbus_free(mb);
+    std::stop_source test;
+    std::stop_token token = test.get_token();
     ba::io_context ioContext;
     Server s(ioContext);
     std::jthread th([&ioContext] { ioContext.run(); });
+    std::this_thread::sleep_for(10s);
+    std::jthread th2(run_signal, &token, &s );
     std::this_thread::sleep_for(2s);
+    stop_func(&test);
     s.stop();
     th.join();
-//    std::stop_source test;
-//    std::stop_token token = test.get_token();
+
 //    bs::signal<void(State)> testSig;
 //    testSig.connect(&print_p1Name);
 //    testSig.connect(&print_p2Name);
