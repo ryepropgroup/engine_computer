@@ -74,7 +74,7 @@ private:
         immediate &= !_mlist.empty(); // assert same
         if (immediate) _mlist.insert(std::next(begin(_mlist)), std::move(msg)); // insert at beginning of list
         else _mlist.push_back(std::move(msg)); //queue to end
-        return _mlist.size()==1;
+        return _mlist.size() == 1;
     }
 
     // return true if messages are pending post-dequeue
@@ -114,7 +114,7 @@ struct Server {
     }
 
     void stop() {
-        _ioc.post([this]{
+        _ioc.post([this] {
             this->_acc.cancel();
             this->_acc.close();
         });
@@ -126,22 +126,23 @@ struct Server {
     }
 
 private:
-    size_t reg(Connection &c) {
-        c._sig = _emit_event.connect(
-                [&c](State s) {
-                    c.send(s.toJSON().dump(), true);
+    size_t reg(std::shared_ptr<Connection> c) {
+        c->_sig = _emit_event.connect(
+                [safe_c = std::weak_ptr<Connection>(c)](State s) {
+                    if (auto c = safe_c.lock())
+                        c->send(s.toJSON().dump(), true);
                 }
         );
         return _emit_event.num_slots();
     }
 
-    void accept(){
+    void accept() {
         auto sess = std::make_shared<Connection>(_acc.get_executor());
-        _acc.async_accept(sess->_s, [this,sess](boost::system::error_code ec){
-            auto endpoint = ec? ba::ip::tcp::endpoint{} : sess->_s.remote_endpoint();
-            std::cout<<"Connetion from " << endpoint << " ("<<ec.message()<<")" <<std::endl;
-            if(!ec){
-                auto n = reg(*sess);
+        _acc.async_accept(sess->_s, [this, sess](boost::system::error_code ec) {
+            auto endpoint = ec ? ba::ip::tcp::endpoint{} : sess->_s.remote_endpoint();
+            std::cout << "Connetion from " << endpoint << " (" << ec.message() << ")" << std::endl;
+            if (!ec) {
+                auto n = reg(sess);
                 sess->start();
                 accept();
             }
@@ -174,12 +175,12 @@ int main() {
 //     modbus_read_registers(mb, 16386, 5, tab_reg);
 //     modbus_close(mb);
 //     modbus_free(mb);
-ba::io_context ioContext;
-Server s(ioContext);
-std::jthread th([&ioContext]{ioContext.run();});
-std::this_thread::sleep_for(2s);
-s.stop();
-th.join();
+    ba::io_context ioContext;
+    Server s(ioContext);
+    std::jthread th([&ioContext] { ioContext.run(); });
+    std::this_thread::sleep_for(2s);
+    s.stop();
+    th.join();
 //    std::stop_source test;
 //    std::stop_token token = test.get_token();
 //    bs::signal<void(State)> testSig;
