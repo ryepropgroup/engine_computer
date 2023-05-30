@@ -2,6 +2,7 @@
 #include "json.hpp"
 #include <boost/asio.hpp>
 #include <boost/signals2.hpp>
+#include <fstream>
 #include <iostream>
 #include <modbus/modbus-tcp.h>
 #include <thread>
@@ -48,11 +49,17 @@ struct State {
   std::map<std::string, bool> valves;
 
   [[nodiscard]] json toJSON() const {
+    std::vector<std::string> db = {std::to_string(int(lj.p1val)),std::to_string(int(lj.p2val)),std::to_string(int(lj.p3val)) };
+    for (auto& d : db){
+      while(d.length()<4){
+        d = "0"+d;
+      }
+    }
     json jsonState;
     jsonState["launched"] = launched;
-    jsonState["lj"]["p1val"] = lj.p1val;
-    jsonState["lj"]["p2val"] = lj.p2val;
-    jsonState["lj"]["p3val"] = lj.p3val;
+    jsonState["lj"]["p1val"] = db[0];
+    jsonState["lj"]["p2val"] = db[1];
+    jsonState["lj"]["p3val"] = db[2];
     jsonState["valves"] = valves;
     return jsonState;
   }
@@ -182,10 +189,51 @@ private:
   bs::signal<void(State const &s)> _emit_event;
   std::stop_source _ss;
 };
+const char **vectorToChar(const std::vector<std::string> &stringVector) {
+  const char **charPtrArray = new const char *[stringVector.size()];
+  for (size_t i = 0; i < stringVector.size(); i++) {
+    charPtrArray[i] = stringVector[i].c_str();
+  }
 
+  return charPtrArray;
+}
+const double *vectorToDouble(const std::vector<double> &doubleVector) {
+  return doubleVector.data();
+}
 void run_signal(const std::stop_token *t, Server *s) {
   State st = *new State();
+  // LabJack Initialization
+  int err, handle, errorAddress = INITIAL_ERR_ADDRESS;
+  std::string unixtimenow =
+      std::to_string(std::chrono::duration_cast<std::chrono::seconds>(
+                         std::chrono::system_clock::now().time_since_epoch())
+                         .count());
+  std::string filename = unixtimenow += ".csv";
+  err = LJM_Open(LJM_dtANY, LJM_ctANY, "LJM_idANY", &handle);
+  ErrorCheck(err, "LJM_Open");
+  std::ofstream file(filename);
+  err = LJM_eWriteNames(handle, st.lj.p1->params.size(),
+                        vectorToChar(st.lj.p1->params),
+                        vectorToDouble(st.lj.p1->settings), &errorAddress);
+  ErrorCheck(err, "LJM_eWriteNames");
+  err = LJM_eWriteNames(handle, st.lj.p2->params.size(),
+                        vectorToChar(st.lj.p2->params),
+                        vectorToDouble(st.lj.p2->settings), &errorAddress);
+  ErrorCheck(err, "LJM_eWriteNames");
+  err = LJM_eWriteNames(handle, st.lj.p3->params.size(),
+                        vectorToChar(st.lj.p3->params),
+                        vectorToDouble(st.lj.p3->settings), &errorAddress);
+  ErrorCheck(err, "LJM_eWriteNames");
   while (!t->stop_requested()) {
+    err = LJM_eReadName(handle, st.lj.p1->name.c_str(), &st.lj.p1val);
+    ErrorCheck(err, "LJM_eReadName");
+    err = LJM_eReadName(handle, st.lj.p2->name.c_str(), &st.lj.p2val);
+    ErrorCheck(err, "LJM_eReadName");
+    err = LJM_eReadName(handle, st.lj.p3->name.c_str(), &st.lj.p3val);
+    ErrorCheck(err, "LJM_eReadName");
+    st.lj.p1val *=25000;
+    st.lj.p2val *= 25000;
+    st.lj.p3val *= 25000;
     s->emit(st);
   }
   std::lock_guard<std::mutex> l(coutm);
