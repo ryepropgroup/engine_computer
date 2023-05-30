@@ -154,8 +154,10 @@ private:
   size_t reg(std::shared_ptr<SocketConn> c) {
     c->_sig =
         _emit_event.connect([safe_c = std::weak_ptr<SocketConn>(c)](State s) {
-          if (auto c = safe_c.lock())
-            c->send(s.toJSON().dump(), true);
+          if (auto c = safe_c.lock()) {
+            std::string msg = s.toJSON().dump() + "\n";
+            c->send(msg, true);
+          }
         });
     return _emit_event.num_slots();
   }
