@@ -45,10 +45,22 @@ struct LJSensors {
 };
 
 struct State {
+  State(){
+ valves["V11_S"] = true; 
+  valves["V10_SB"] = false;
+  valves["V34_SB"] = false;
+  valves["V30_SB"] = false;
+  valves["V12_S"] = false;
+  valves["V20_SB"] = false;
+  valves["V23_SB"] = false;
+  valves["V35_S"] = false;
+  valves["V37_S"] = false;
+  valves["V36_SB"] = false;
+ }
   bool launched = false;
   LJSensors lj;
   std::map<std::string, bool> valves;
-
+  
   [[nodiscard]] json toJSON() const {
     std::vector<std::string> db = {std::to_string(int(lj.p1val)),
                                    std::to_string(int(lj.p2val)),
@@ -88,7 +100,8 @@ private:
     std::string val;
     if (std::getline(std::istream(&_buf), val)) {
       std::lock_guard<std::mutex> l(coutm);
-      std::cout << val << std::endl;
+      size_t nindex = val.rfind("_");
+      std::cout << val.substr(0,nindex)<< std::endl;
       if (val == "stop") {
         std::cout << "STOPPING WRITE LOOP" << std::endl;
         _ss.request_stop();
@@ -143,7 +156,12 @@ private:
 struct Server {
   explicit Server(ba::io_context &ioContext, std::stop_source &stopSource)
       : _ioc(ioContext), _ss(stopSource){
-    _sp = std::make_shared<ba::serial_port>(_ioc, "/tty/ACM0");
+        try{
+    _sp = std::make_shared<ba::serial_port>(_ioc, "/dev/ttyACM0");
+        }
+        catch(...){
+          std::cout<<"FUCK"<<std::endl;
+        }
     _sp->set_option(ba::serial_port_base::baud_rate(115200));
     _acc.bind({{}, PORT});
     _acc.set_option(ba::ip::tcp::acceptor::reuse_address());
