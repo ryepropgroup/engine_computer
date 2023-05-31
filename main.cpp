@@ -6,6 +6,7 @@
 #include <iostream>
 #include <modbus/modbus-tcp.h>
 #include <thread>
+#include <utility>
 
 using json = nlohmann::json;
 using namespace std::chrono_literals;
@@ -49,10 +50,12 @@ struct State {
   std::map<std::string, bool> valves;
 
   [[nodiscard]] json toJSON() const {
-    std::vector<std::string> db = {std::to_string(int(lj.p1val)),std::to_string(int(lj.p2val)),std::to_string(int(lj.p3val)) };
-    for (auto& d : db){
-      while(d.length()<4){
-        d = "0"+d;
+    std::vector<std::string> db = {std::to_string(int(lj.p1val)),
+                                   std::to_string(int(lj.p2val)),
+                                   std::to_string(int(lj.p3val))};
+    for (auto &d : db) {
+      while (d.length() < 4) {
+        d = "0" + d;
       }
     }
     json jsonState;
@@ -67,8 +70,8 @@ struct State {
 
 struct SocketConn : std::enable_shared_from_this<SocketConn> {
   explicit SocketConn(ba::any_io_executor const &ioContext,
-                      std::stop_source &stopSource)
-      : _s(ioContext), _ss(stopSource){};
+                      std::stop_source &stopSource, std::shared_ptr<ba::serial_port> sp)
+      : _s(ioContext), _ss(stopSource), _sp(std::move(sp)){};
 
   void start() { _read(); }
 
@@ -134,11 +137,14 @@ private:
   ba::ip::tcp::socket _s;
   bs::scoped_connection _sig;
   std::stop_source _ss;
+  std::shared_ptr<ba::serial_port> _sp;
 };
 
 struct Server {
   explicit Server(ba::io_context &ioContext, std::stop_source &stopSource)
-      : _ioc(ioContext), _ss(stopSource) {
+      : _ioc(ioContext), _ss(stopSource){
+    _sp = std::make_shared<ba::serial_port>(_ioc, "/tty/ACM0");
+    _sp->set_option(ba::serial_port_base::baud_rate(115200));
     _acc.bind({{}, PORT});
     _acc.set_option(ba::ip::tcp::acceptor::reuse_address());
     _acc.listen();
@@ -158,9 +164,9 @@ struct Server {
   }
 
 private:
-  size_t reg(std::shared_ptr<SocketConn> c) {
-    c->_sig =
-        _emit_event.connect([safe_c = std::weak_ptr<SocketConn>(c)](State s) {
+  size_t reg(const std::shared_ptr<SocketConn> &c) {
+    c->_sig = _emit_event.connect(
+        [safe_c = std::weak_ptr<SocketConn>(c)](const State &s) {
           if (auto c = safe_c.lock()) {
             std::string msg = s.toJSON().dump() + "\n";
             c->send(msg, true);
@@ -170,7 +176,7 @@ private:
   }
 
   void accept() {
-    auto sess = std::make_shared<SocketConn>(_acc.get_executor(), _ss);
+    auto sess = std::make_shared<SocketConn>(_acc.get_executor(), _ss, _sp);
     _acc.async_accept(sess->_s, [this, sess](boost::system::error_code ec) {
       auto endpoint = ec ? ba::ip::tcp::endpoint{} : sess->_s.remote_endpoint();
       std::lock_guard<std::mutex> l(coutm);
@@ -188,6 +194,7 @@ private:
   ba::ip::tcp::acceptor _acc{_ioc, ba::ip::tcp::v4()};
   bs::signal<void(State const &s)> _emit_event;
   std::stop_source _ss;
+  std::shared_ptr<ba::serial_port> _sp;
 };
 const char **vectorToChar(const std::vector<std::string> &stringVector) {
   const char **charPtrArray = new const char *[stringVector.size()];
@@ -204,23 +211,23 @@ void run_signal(const std::stop_token *t, Server *s) {
   State st = *new State();
   // LabJack Initialization
   int err, handle, errorAddress = INITIAL_ERR_ADDRESS;
-  std::string unixtimenow =
+  std::string utn =
       std::to_string(std::chrono::duration_cast<std::chrono::seconds>(
                          std::chrono::system_clock::now().time_since_epoch())
                          .count());
-  std::string filename = unixtimenow += ".csv";
+  std::string filename = utn += ".csv";
   err = LJM_Open(LJM_dtANY, LJM_ctANY, "LJM_idANY", &handle);
   ErrorCheck(err, "LJM_Open");
   std::ofstream file(filename);
-  err = LJM_eWriteNames(handle, st.lj.p1->params.size(),
+  err = LJM_eWriteNames(handle, int(st.lj.p1->params.size()),
                         vectorToChar(st.lj.p1->params),
                         vectorToDouble(st.lj.p1->settings), &errorAddress);
   ErrorCheck(err, "LJM_eWriteNames");
-  err = LJM_eWriteNames(handle, st.lj.p2->params.size(),
+  err = LJM_eWriteNames(handle, int(st.lj.p2->params.size()),
                         vectorToChar(st.lj.p2->params),
                         vectorToDouble(st.lj.p2->settings), &errorAddress);
   ErrorCheck(err, "LJM_eWriteNames");
-  err = LJM_eWriteNames(handle, st.lj.p3->params.size(),
+  err = LJM_eWriteNames(handle, int(st.lj.p3->params.size()),
                         vectorToChar(st.lj.p3->params),
                         vectorToDouble(st.lj.p3->settings), &errorAddress);
   ErrorCheck(err, "LJM_eWriteNames");
@@ -231,7 +238,7 @@ void run_signal(const std::stop_token *t, Server *s) {
     ErrorCheck(err, "LJM_eReadName");
     err = LJM_eReadName(handle, st.lj.p3->name.c_str(), &st.lj.p3val);
     ErrorCheck(err, "LJM_eReadName");
-    st.lj.p1val *=25000;
+    st.lj.p1val *= 25000;
     st.lj.p2val *= 25000;
     st.lj.p3val *= 25000;
     s->emit(st);
