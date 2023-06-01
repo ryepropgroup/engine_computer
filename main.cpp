@@ -102,6 +102,8 @@ private:
       std::lock_guard<std::mutex> l(coutm);
       size_t nindex = val.rfind("_");
       std::cout << val.substr(0,nindex)<< std::endl;
+      std::string valve = val.substr(1,2);
+      std::cout<<valve<<std::endl;
       if (val == "stop") {
         std::cout << "STOPPING WRITE LOOP" << std::endl;
         _ss.request_stop();
@@ -273,8 +275,9 @@ int main() {
   std::jthread th([&ioContext] { ioContext.run(); });
   std::this_thread::sleep_for(10s);
   std::jthread th2(run_signal, &token, &s);
-  std::this_thread::sleep_for(10s);
-  test.request_stop();
+  while(!token.stop_requested()){
+  std::this_thread::sleep_for(10ms);
+  }
   s.stop();
   th.join();
   return 0;
