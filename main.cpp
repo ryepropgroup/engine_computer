@@ -12,7 +12,7 @@ using json = nlohmann::json;
 using namespace std::chrono_literals;
 namespace ba = boost::asio;
 namespace bs = boost::signals2;
-unsigned short PORT = 6969;
+unsigned short PORT = 6970;
 std::mutex coutm;
 
 struct Sensor {
@@ -46,18 +46,18 @@ struct LJSensors {
 
 struct State {
     State() {
-        valves["V11_S"] = true; //NO valve
         valves["V10_SB"] = false;
-        valves["V34_SB"] = true; // NO valve
-        valves["V30_SB"] = false;
+        valves["V11_S"] = true; //NO valve
         valves["V12_S"] = true;//NO valve
         valves["V20_SB"] = false;
-        valves["V23_SB"] = true; //NO valve
-        valves["V35_S"] = false;
-        valves["V37_S"] = true; //NO valve
         valves["V21_SB"] = false;
+        valves["V23_SB"] = true; //NO valve
+        valves["V30_SB"] = false;
         valves["V31_SB"] = false;
+        valves["V34_SB"] = true; // NO valve
+        valves["V35_S"] = false;
         valves["V36_SB"] = false;
+        valves["V37_S"] = true; //NO valve
     }
 
     bool launched = false;
@@ -83,7 +83,7 @@ struct State {
     }
 };
 
-std::string valveFunc(const int num, const std::string status){
+std::string valveFunc(const int num, const std::string& status, const std::string& valve, const std::shared_ptr<State>& state){
     std::string r;
     switch(num){
         case 10:
@@ -127,9 +127,11 @@ std::string valveFunc(const int num, const std::string status){
     }
     if(status == "_open"){
         r.append("1");
+        state->valves[valve] = true;
     }
     else if (status == "_close"){
         r.append("0");
+        state->valves[valve] = false;
     }
     return r;
 }
@@ -154,7 +156,7 @@ private:
         if (std::getline(std::istream(&_buf), val)) {
             std::lock_guard<std::mutex> l(coutm);
             size_t nindex = val.rfind('_');
-//            std::cout << val.substr(0, nindex) << std::endl;
+            std::string valstr = val.substr(0, nindex) ;
             std::string status = val.substr(nindex) ;
             std::string valve = val.substr(1, 2);
 //            std::cout << valve << std::endl;
@@ -162,7 +164,7 @@ private:
                 std::cout << "STOPPING WRITE LOOP" << std::endl;
                 _ss.request_stop();
             }
-            std::string tosend = valveFunc(stoi(valve), status);
+            std::string tosend = valveFunc(stoi(valve), status, valstr, _st);
             _sp->write_some(ba::buffer(tosend));
         }
     }
