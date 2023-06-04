@@ -12,7 +12,7 @@ using json = nlohmann::json;
 using namespace std::chrono_literals;
 namespace ba = boost::asio;
 namespace bs = boost::signals2;
-unsigned short PORT = 6970;
+unsigned short PORT = 6969;
 std::mutex coutm;
 
 struct Sensor {
@@ -29,19 +29,24 @@ struct Sensor {
 };
 
 struct LJSensors {
-    double p1val = 0, p2val = 0, p3val = 0;
-    Sensor *p1 =
+    double p1val = 0, p2val = 0, p3val = 0, t1val;
+    Sensor *p1 = // p31
             new Sensor(std::string("AIN0"),
-                       std::vector<std::string>{"AIN0_range", "AIN0_NEGATIVE_CH"},
-                       std::vector<double>{0.1, 1.0});
-    Sensor *p2 =
+                       std::vector<std::string>{"AIN0_range", /*"AIN0_NEGATIVE_CH"*/},
+                       std::vector<double>{10/*, 1.0*/});
+    Sensor *p2 = //p21
             new Sensor(std::string("AIN2"),
-                       std::vector<std::string>{"AIN2_range", "AIN2_NEGATIVE_CH"},
-                       std::vector<double>{0.1, 3.0});
-    Sensor *p3 =
+                       std::vector<std::string>{"AIN2_range", /*"AIN2_NEGATIVE_CH"*/},
+                       std::vector<double>{10/*, 3.0*/});
+    Sensor *p3 = //p10
             new Sensor(std::string("AIN4"),
-                       std::vector<std::string>{"AIN4_range", "AIN4_NEGATIVE_CH"},
-                       std::vector<double>{0.1, 5.0});
+                       std::vector<std::string>{"AIN4_range"/*, "AIN4_NEGATIVE_CH"*/},
+                       std::vector<double>{10/*, 5.0*/});
+    // t3
+    Sensor *t1 = new Sensor(std::string("AIN6_EF_READ_A"),
+                            std::vector<std::string>{"AIN6_EF_INDEX", "AIN6_EF_CONFIG_B", "AIN6_EF_CONFIG_D",
+                                                     "AIN6_EF_CONFIG_E", "AIN6_EF_CONFIG_A"},
+                            std::vector<double>{22, 60052, 1.0, 0.0, 1});
 };
 
 struct State {
@@ -67,7 +72,7 @@ struct State {
     [[nodiscard]] json toJSON() const {
         std::vector<std::string> db = {std::to_string(int(lj.p1val)),
                                        std::to_string(int(lj.p2val)),
-                                       std::to_string(int(lj.p3val))};
+                                       std::to_string(int(lj.p3val)), std::to_string(int(lj.t1val))};
         for (auto &d: db) {
             while (d.length() < 4) {
                 d = "0" + d;
@@ -78,14 +83,16 @@ struct State {
         jsonState["lj"]["p1val"] = db[0];
         jsonState["lj"]["p2val"] = db[1];
         jsonState["lj"]["p3val"] = db[2];
+        jsonState["lj"]["t1val"] = db[3];
         jsonState["valves"] = valves;
         return jsonState;
     }
 };
 
-std::string valveFunc(const int num, const std::string& status, const std::string& valve, const std::shared_ptr<State>& state){
+std::string
+valveFuncNO(const int num, const std::string &status, const std::string &valve, const std::shared_ptr<State> &state) {
     std::string r;
-    switch(num){
+    switch (num) {
         case 10:
             r = "1";
             break;
@@ -125,16 +132,69 @@ std::string valveFunc(const int num, const std::string& status, const std::strin
         default:
             break;
     }
-    if(status == "_open"){
+    if (status == "_open") {
+        r.append("0");
+        state->valves[valve] = false;
+    } else if (status == "_close") {
         r.append("1");
         state->valves[valve] = true;
     }
-    else if (status == "_close"){
+    return r;
+}
+
+std::string
+valveFunc(const int num, const std::string &status, const std::string &valve, const std::shared_ptr<State> &state) {
+    std::string r;
+    switch (num) {
+        case 10:
+            r = "1";
+            break;
+        case 11:
+            r = "2";
+            break;
+        case 12:
+            r = "3";
+            break;
+        case 20:
+            r = "4";
+            break;
+        case 21:
+            r = "5";
+            break;
+        case 23:
+            r = "6";
+            break;
+        case 30:
+            r = "7";
+            break;
+        case 31:
+            r = "8";
+            break;
+        case 34:
+            r = "9";
+            break;
+        case 35:
+            r = "10";
+            break;
+        case 36:
+            r = "11";
+            break;
+        case 37:
+            r = "12";
+            break;
+        default:
+            break;
+    }
+    if (status == "_open") {
+        r.append("1");
+        state->valves[valve] = true;
+    } else if (status == "_close") {
         r.append("0");
         state->valves[valve] = false;
     }
     return r;
 }
+
 struct SocketConn : std::enable_shared_from_this<SocketConn> {
     explicit SocketConn(ba::any_io_executor const &ioContext,
                         std::stop_source &stopSource, std::shared_ptr<ba::serial_port> sp, std::shared_ptr<State> st)
@@ -155,16 +215,33 @@ private:
         std::string val;
         if (std::getline(std::istream(&_buf), val)) {
             std::lock_guard<std::mutex> l(coutm);
-            size_t nindex = val.rfind('_');
-            std::string valstr = val.substr(0, nindex) ;
-            std::string status = val.substr(nindex) ;
-            std::string valve = val.substr(1, 2);
-//            std::cout << valve << std::endl;
-            if(val == "stop") {
-                std::cout << "STOPPING WRITE LOOP" << std::endl;
-                _ss.request_stop();
+            std::cout << val << std::endl;
+            if (val == "stop") {
+                std::cout<<"potato"<<std::endl;
+                _sp->write_some(ba::buffer(std::string("999")));
+                return;
             }
-            std::string tosend = valveFunc(stoi(valve), status, valstr, _st);
+            if (val == "seq") {
+                // open
+                _sp->write_some(ba::buffer(std::string("71")));
+                std::this_thread::sleep_for(3s);
+                // close
+                _sp->write_some(ba::buffer(std::string("70")));
+                return;
+            }
+            size_t nindex = val.rfind('_');
+            std::string valstr = val.substr(0, nindex);
+            std::string status = val.substr(nindex);
+            std::string valve = val.substr(1, 2);
+            std::string tosend;
+            if (val.find("_NO_") != std::string::npos) {
+//                std::cout<<"NO valve"<<std::endl;
+                tosend = valveFuncNO(stoi(valve), status, valstr, _st);
+            } else {
+//                std::cout<<"regular valve"<<std::endl;
+                tosend = valveFunc(stoi(valve), status, valstr, _st);
+            }
+            std::cout << tosend << std::endl;
             _sp->write_some(ba::buffer(tosend));
         }
     }
@@ -218,7 +295,7 @@ struct Server {
     explicit Server(ba::io_context &ioContext, std::stop_source &stopSource, const std::shared_ptr<State> &st)
             : _ioc(ioContext), _ss(stopSource), _st(st) {
         try {
-            _sp = std::make_shared<ba::serial_port>(_ioc, "/dev/ttyACM0");
+            _sp = std::make_shared<ba::serial_port>(_ioc, "/dev/ttyACM1");
         }
         catch (...) {
             std::cout << "ARDUINO" << std::endl;
@@ -293,11 +370,10 @@ const double *vectorToDouble(const std::vector<double> &doubleVector) {
 void run_signal(const std::stop_token *t, Server *s, const std::shared_ptr<State> st) {
     // LabJack Initialization
     int err, handle, errorAddress = INITIAL_ERR_ADDRESS;
-    std::string utn =
-            std::to_string(std::chrono::duration_cast<std::chrono::seconds>(
-                    std::chrono::system_clock::now().time_since_epoch())
-                                   .count());
-    std::string filename = utn += ".csv";
+    long utn = std::chrono::duration_cast<std::chrono::seconds>(
+                    std::chrono::system_clock::now().time_since_epoch()).count();
+    std::string utns = std::to_string(utn);
+    std::string filename = utns += ".csv";
     try {
         err = LJM_Open(LJM_dtANY, LJM_ctANY, "LJM_idANY", &handle);
         ErrorCheck(err, "LJM_Open");
@@ -306,7 +382,8 @@ void run_signal(const std::stop_token *t, Server *s, const std::shared_ptr<State
         s->stop();
         std::cout << "LABJACK" << std::endl;
     }
-//    std::ofstream file(filename);
+    std::ofstream file(filename);
+    file<<"elapsed"<<","<<"t3"<<","<<"p31"<<","<<"p21"<<","<<"p10"<<std::endl;
     err = LJM_eWriteNames(handle, int(st->lj.p1->params.size()),
                           vectorToChar(st->lj.p1->params),
                           vectorToDouble(st->lj.p1->settings), &errorAddress);
@@ -319,16 +396,26 @@ void run_signal(const std::stop_token *t, Server *s, const std::shared_ptr<State
                           vectorToChar(st->lj.p3->params),
                           vectorToDouble(st->lj.p3->settings), &errorAddress);
     ErrorCheck(err, "LJM_eWriteNames");
+    err = LJM_eWriteNames(handle, int(st->lj.t1->params.size()), vectorToChar(st->lj.t1->params),
+                          vectorToDouble(st->lj.t1->settings), &errorAddress);
+    ErrorCheck(err, "LJM_eWriteNames");
     while (!t->stop_requested()) {
+        long now = std::chrono::duration_cast<std::chrono::seconds>(
+                std::chrono::system_clock::now().time_since_epoch()).count();
+        long elapsed = now-utn;
+        std::string strelapsed = std::to_string(now);
         err = LJM_eReadName(handle, st->lj.p1->name.c_str(), &st->lj.p1val);
         ErrorCheck(err, "LJM_eReadName");
         err = LJM_eReadName(handle, st->lj.p2->name.c_str(), &st->lj.p2val);
         ErrorCheck(err, "LJM_eReadName");
         err = LJM_eReadName(handle, st->lj.p3->name.c_str(), &st->lj.p3val);
         ErrorCheck(err, "LJM_eReadName");
-        st->lj.p1val *= 25000;
-        st->lj.p2val *= 25000;
-        st->lj.p3val *= 25000;
+        err = LJM_eReadName(handle, st->lj.t1->name.c_str(), &st->lj.t1val);
+        ErrorCheck(err, "LJM_eReadName");
+        st->lj.p1val *= 300;
+        st->lj.p2val *= 300;
+        st->lj.p3val *= 300;
+        file<<strelapsed<<","<<std::to_string(st->lj.t1val)<<","<<std::to_string(st->lj.p1val)<<","<<std::to_string(st->lj.p2val)<<","<<std::to_string(st->lj.p3val)<<std::endl;
         s->emit(st);
     }
     std::lock_guard<std::mutex> l(coutm);
