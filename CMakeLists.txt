@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.24)
 project(engine_computer)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_executable(engine_computer main.cpp)
 include_directories(lib)
 if(APPLE)
