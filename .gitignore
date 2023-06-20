@@ -4,3 +4,5 @@
 /compile_commands.json
 /Makefile
 /CMakeCache.txt
+/CMakeFiles
+*.cmake
