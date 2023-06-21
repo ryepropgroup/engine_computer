@@ -3,7 +3,7 @@ project(engine_computer)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-add_executable(engine_computer main.cpp)
+add_executable(engine_computer main.cpp helpers.h helpers.cpp)
 include_directories(lib)
 if(APPLE)
     set(LIBMODBUS_PATH "/opt/homebrew/lib/libmodbus.dylib")
