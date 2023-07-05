@@ -7,154 +7,210 @@
 #include <thread>
 #include <utility>
 #include <vector>
+
 namespace ba = boost::asio;
 namespace bs = boost::signals2;
 using json = nlohmann::json;
 using namespace std::chrono_literals;
 namespace mach {
-inline std::mutex coutm;
-struct Sensor;
-struct LJSensors;
-struct SocketConn;
-struct Server;
-inline unsigned short PORT = 6969;
+    const std::map<std::string, std::string> vlj = {
+            {"V10",    "DIO21"},
+            {"V11_NO", "DIO0"},
+            {"V12_NO", "DIO2"},
+            {"V20",    "DIO4"},
+            {"V21",    "DIO6"},
+            {"V22_NO", "DIO22"},
+            {"V23_NO", "DIO20"},
+            {"V30",    "DIO1"},
+            {"V31",    "DIO3"},
+            {"V32",    "DIO5"},
+            {"V33_NO", "DIO7"},
+            {"V34",    "DIO13"},
+            {"V35_NO", "DIO9"},
+            {"V36",    "DIO11"},
+            {"V37",    "DIO18"},
+            {"V38_NO", "DIO16"},
+    };
+    inline std::mutex coutm;
+    struct Sensor;
+    struct LJSensors;
+    struct SocketConn;
+    struct Server;
+    inline unsigned short PORT = 6969;
 
-const char **vectorToChar(const std::vector<std::string> &stringVector);
+    void dispatchValve(std::string name, int handle);
 
-const double *vectorToDouble(const std::vector<double> &doubleVector);
+    const char **vectorToChar(const std::vector<std::string> &stringVector);
 
-struct Sensor {
-  Sensor(std::string name, std::vector<std::string> params,
-         const std::vector<double> &settings) {
-    this->name = std::move(name);
-    this->params = std::move(params);
-    this->settings = settings;
-  }
+    const double *vectorToDouble(const std::vector<double> &doubleVector);
 
-  std::string name;
-  std::vector<std::string> params;
-  std::vector<double> settings;
-};
-struct LJSensors {
-  double p1val = 0, p2val = 0, p3val = 0, t1val;
-  mach::Sensor *p1 = // p31
-      new Sensor(std::string("AIN0"),
-                 std::vector<std::string>{"AIN0_range", /*"AIN0_NEGATIVE_CH"*/},
-                 std::vector<double>{10 /*, 1.0*/});
-  mach::Sensor *p2 = // p21
-      new Sensor(std::string("AIN2"),
-                 std::vector<std::string>{"AIN2_range", /*"AIN2_NEGATIVE_CH"*/},
-                 std::vector<double>{10 /*, 3.0*/});
-  mach::Sensor *p3 = // p10
-      new Sensor(
-          std::string("AIN4"),
-          std::vector<std::string>{"AIN4_range" /*, "AIN4_NEGATIVE_CH"*/},
-          std::vector<double>{10 /*, 5.0*/});
-  // t3
-  mach::Sensor *t1 =
-      new Sensor(std::string("AIN6_EF_READ_A"),
-                 std::vector<std::string>{
-                     "AIN6_EF_INDEX", "AIN6_EF_CONFIG_B", "AIN6_EF_CONFIG_D",
-                     "AIN6_EF_CONFIG_E", "AIN6_EF_CONFIG_A"},
-                 std::vector<double>{22, 60052, 1.0, 0.0, 1});
-};
-struct State {
-  State() {
-    valves["V10_SB"] = false;
-    valves["V11_S"] = true; // NO valve
-    valves["V12_S"] = true; // NO valve
-    valves["V20_SB"] = false;
-    valves["V21_SB"] = false;
-    valves["V23_SB"] = true; // NO valve
-    valves["V30_SB"] = false;
-    valves["V31_SB"] = false;
-    valves["V34_SB"] = true; // NO valve
-    valves["V35_S"] = false;
-    valves["V36_SB"] = false;
-    valves["V37_S"] = true; // NO valve
-  }
+    struct Sensor {
+        Sensor(std::string name, std::vector<std::string> params,
+               const std::vector<double> &settings) {
+            this->name = std::move(name);
+            this->params = std::move(params);
+            this->settings = settings;
+        }
 
-  bool launched = false;
-  LJSensors lj;
-  std::map<std::string, bool> valves;
+        std::string name;
+        std::vector<std::string> params;
+        std::vector<double> settings;
+    };
 
-  [[nodiscard]] json toJSON() const {
-    std::vector<std::string> db = {
-        std::to_string(int(lj.p1val)), std::to_string(int(lj.p2val)),
-        std::to_string(int(lj.p3val)), std::to_string(int(lj.t1val))};
-    for (auto &d : db) {
-      while (d.length() < 4) {
-        d = "0" + d;
-      }
-    }
-    json jsonState;
-    jsonState["launched"] = launched;
-    jsonState["lj"]["p1val"] = db[0];
-    jsonState["lj"]["p2val"] = db[1];
-    jsonState["lj"]["p3val"] = db[2];
-    jsonState["lj"]["t1val"] = db[3];
-    jsonState["valves"] = valves;
-    return jsonState;
-  }
-};
+    struct LJSensors {
+        //TODO: swap to proper AINs to change
+        double p10val = 0, p21val = 0, p31val = 0, t2val, t3val;
+        mach::Sensor *p31 = // p31
+                new Sensor(std::string("AIN0"),
+                           std::vector<std::string>{"AIN0_range", /*"AIN0_NEGATIVE_CH"*/},
+                           std::vector<double>{10 /*, 1.0*/});
+        mach::Sensor *p21 = // p21
+                new Sensor(std::string("AIN2"),
+                           std::vector<std::string>{"AIN2_range", /*"AIN2_NEGATIVE_CH"*/},
+                           std::vector<double>{10 /*, 3.0*/});
+        mach::Sensor *p10 = // p10
+                new Sensor(
+                        std::string("AIN4"),
+                        std::vector<std::string>{"AIN4_range" /*, "AIN4_NEGATIVE_CH"*/},
+                        std::vector<double>{10 /*, 5.0*/});
+        mach::Sensor *t2 =
+                new Sensor(std::string("AIN6_EF_READ_A"),
+                           std::vector<std::string>{
+                                   "AIN6_EF_INDEX", "AIN6_EF_CONFIG_B", "AIN6_EF_CONFIG_D",
+                                   "AIN6_EF_CONFIG_E", "AIN6_EF_CONFIG_A"},
+                           std::vector<double>{22, 60052, 1.0, 0.0, 1});
 
-std::string valveFuncNO(const int num, const std::string &status,
-                        const std::string &valve,
-                        const std::shared_ptr<State> &state);
+        mach::Sensor *t3 =
+                new Sensor(std::string("AIN6_EF_READ_A"),
+                           std::vector<std::string>{
+                                   "AIN6_EF_INDEX", "AIN6_EF_CONFIG_B", "AIN6_EF_CONFIG_D",
+                                   "AIN6_EF_CONFIG_E", "AIN6_EF_CONFIG_A"},
+                           std::vector<double>{22, 60052, 1.0, 0.0, 1});
+    };
 
-std::string valveFunc(const int num, const std::string &status,
-                      const std::string &valve,
-                      const std::shared_ptr<State> &state);
+    struct State {
+    private:
+        bool launched = false;
+        LJSensors lj;
+        std::map<std::string, bool> valves;
+        mutable std::mutex slock;
+    public:
+        State() {
+            valves["V10"] = false;
+            valves["V11_NO"] = true; // NO valve
+            valves["V12_NO"] = true; // NO valve
+            valves["V20"] = false;
+            valves["V21"] = false;
+            valves["V22_NO"] = true; //NO valve
+            valves["V23_NO"] = true; // NO valve
+            valves["V30"] = false;
+            valves["V31"] = false;
+            valves["V32"] = false;
+            valves["V33_NO"] = true; // NO valve
+            valves["V34"] = false;
+            valves["V35_NO"] = true; //NO valve
+            valves["V36"] = false;
+            valves["V37"] = false;
+            valves["V38_NO"] = true; // NO valve
+        }
 
-struct SocketConn : std::enable_shared_from_this<SocketConn> {
-  explicit SocketConn(ba::any_io_executor const &ioContext,
-                      std::stop_source &stopSource,
-                      std::shared_ptr<ba::serial_port> sp,
-                      std::shared_ptr<State> st);
+        [[nodiscard]] json toJSON() const {
+            std::lock_guard<std::mutex> guard(slock);
+            std::vector<std::string> db = {
+                    std::to_string(int(lj.p10val)), std::to_string(int(lj.p21val)),
+                    std::to_string(int(lj.p31val)), std::to_string(int(lj.t2val)), std::to_string(int(lj.t3val))};
+            for (auto &d: db) {
+                while (d.length() < 4) {
+                    d = "0" + d;
+                }
+            }
+            json jsonState;
+            jsonState["launched"] = launched;
+            jsonState["lj"]["p10val"] = db[0];
+            jsonState["lj"]["p21val"] = db[1];
+            jsonState["lj"]["p31val"] = db[2];
+            jsonState["lj"]["t2val"] = db[3];
+            jsonState["lj"]["t3val"] = db[4];
+            jsonState["valves"] = valves;
+            return jsonState;
+        }
 
-  void start();
+        [[nodiscard]] bool isLaunched() const {
+            std::lock_guard<std::mutex> guard(slock);
+            return launched;
+        }
 
-  void send(std::string msg, bool immediate = false);
+        void setLaunched(bool status) {
+            std::lock_guard<std::mutex> guard(slock);
+            State::launched = status;
+        }
 
-private:
-  void input();
+        [[nodiscard]] const std::map<std::string, bool> &getValves() const {
+            std::lock_guard<std::mutex> guard(slock);
+            return valves;
+        }
 
-  bool nq(std::string msg, bool immediate);
+        void setValves(const std::map<std::string, bool> &v) {
+            std::lock_guard<std::mutex> guard(slock);
+            State::valves = v;
+        }
+    };
 
-  // return true if messages are pending post-dequeue
-  bool dq();
+//    std::string valveFuncNO(const int num, const std::string &status,
+//                            const std::string &valve,
+//                            const std::shared_ptr<State> &state);
 
-  void _read();
+//    std::string valveFunc(const int num, const std::string &status,
+//                          const std::string &valve,
+//                          const std::shared_ptr<State> &state);
+    struct SocketConn : std::enable_shared_from_this<SocketConn> {
+        explicit SocketConn(ba::any_io_executor const &ioContext,
+                            std::stop_source &stopSource, const int &lj);
 
-  void _write();
-  friend struct Server;
-  boost::asio::streambuf _buf;
-  std::list<std::string> _mlist;
-  ba::ip::tcp::socket _s;
-  bs::scoped_connection _sig;
-  std::stop_source _ss;
-  std::shared_ptr<ba::serial_port> _sp;
-  std::shared_ptr<State> _st;
-};
-struct Server {
-  explicit Server(ba::io_context &ioContext, std::stop_source &stopSource,
-                  const std::shared_ptr<State> &st);
+        void start();
 
-  void stop();
+        void send(std::string msg, bool immediate = false);
 
-  size_t emit(const std::shared_ptr<State> &s);
+    private:
+        void input();
 
-private:
-  size_t reg(const std::shared_ptr<SocketConn> &c);
+        bool nq(std::string msg, bool immediate);
 
-  void accept();
+        // return true if messages are pending post-dequeue
+        bool dq();
 
-  ba::io_context &_ioc;
-  ba::ip::tcp::acceptor _acc{_ioc, ba::ip::tcp::v4()};
-  bs::signal<void(std::shared_ptr<State> const &s)> _emit_event;
-  std::stop_source _ss;
-  std::shared_ptr<ba::serial_port> _sp;
-  std::shared_ptr<State> _st;
-};
+        void _read();
+
+        void _write();
+
+        friend struct Server;
+        boost::asio::streambuf _buf;
+        std::list<std::string> _mlist;
+        ba::ip::tcp::socket _s;
+        bs::scoped_connection _sig;
+        std::stop_source _ss;
+        int labjack;
+    };
+
+    struct Server {
+        explicit Server(ba::io_context &ioContext, std::stop_source &stopSource,
+                        const std::shared_ptr<State> &st, const int &labjack);
+
+        void stop();
+
+        size_t emit(const std::shared_ptr<State> &s);
+
+    private:
+        size_t reg(const std::shared_ptr<SocketConn> &c);
+
+        void accept();
+
+        ba::io_context &_ioc;
+        ba::ip::tcp::acceptor _acc{_ioc, ba::ip::tcp::v4()};
+        bs::signal<void(std::shared_ptr<State> const &s)> _emit_event;
+        std::stop_source _ss;
+        std::shared_ptr<State> _st;
+        int labjack;
+    };
 
 } // namespace mach
