@@ -1,4 +1,5 @@
 #include "LabJackM.h"
+#include <bitset>
 #include <boost/asio.hpp>
 #include <boost/signals2.hpp>
 #include <fstream>
@@ -66,22 +67,27 @@ int main() {
     std::this_thread::sleep_for(10s);
     while (!token.stop_requested()) {
         std::this_thread::sleep_for(10ms);
-        double test;
-        LJM_eReadName(handle, "DIO_STATE",&test);
-        auto btest = reinterpret_cast<char*>(&test);
-        std::cout<<btest[0]<<std::endl;
-//        auto state = sharedState->getValves();
-//        for (auto io: mach::vlj) {
-//            double val;
-//            LJM_eReadName(handle, io.second.c_str(), &val);
-//            if(io.first.find('_')!=std::string::npos){
-//                state[io.first] = val;
-//            }
-//            else{
-//            state[io.first] = !val;
-//            }
-//        }
-//        sharedState->setValves(state)
+        mach::udouble test;
+        LJM_eReadName(handle, "DIO_STATE",&test.d);
+        std::bitset<sizeof(double)*8>btest(test.u);
+        auto bits = btest.to_string();
+        auto vals = bits.substr(18,16);
+        std::reverse(vals.begin(),vals.end());
+        auto state = sharedState->getValves();
+        for (size_t i = 0; i < vals.size(); i++) {
+            std::string k = "DIO"+std::to_string(i);
+            char v = vals.at(i);
+            int nb = v-'0';
+//            std::cout<<k<<mach::vljf.at(k)<<state[mach::vljf.at(k)]<<std::endl;
+            if(mach::vljf.at(k).find('_')!=std::string::npos){
+                state[mach::vljf.at(k)] = nb;
+            }
+            else{
+                state[mach::vljf.at(k)] = !nb;
+            }
+        }
+        sharedState->setValves(state);
+//        std::cout<<sharedState->toJSON()<<std::endl;
         s.emit(sharedState);
     }
     s.stop();

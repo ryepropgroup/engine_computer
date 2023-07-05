@@ -25,30 +25,163 @@ void mach::SocketConn::send(std::string msg, bool immediate) {
          });
 }
 
-void mach::dispatchValve(std::string name, int handle){
+void mach::dispatchValve(std::string name, int handle) {
     if (name == "stop") {
-        std::cout << "potato" << std::endl;
+        LJM_eWriteName(handle, mach::vlj.at("V10").c_str(), 1);
+        LJM_eWriteName(handle, mach::vlj.at("V21").c_str(), 1);
+        LJM_eWriteName(handle, mach::vlj.at("V20").c_str(), 1);
+        LJM_eWriteName(handle, mach::vlj.at("V30").c_str(), 1);
+        LJM_eWriteName(handle, mach::vlj.at("V31").c_str(), 1);
+        LJM_eWriteName(handle, mach::vlj.at("V32").c_str(), 1);
+        LJM_eWriteName(handle, mach::vlj.at("V34").c_str(), 1);
+        LJM_eWriteName(handle, mach::vlj.at("V36").c_str(), 1);
+        LJM_eWriteName(handle, mach::vlj.at("V37").c_str(), 1);
+        LJM_eWriteName(handle, mach::vlj.at("V11_NO").c_str(), 1);
+        LJM_eWriteName(handle, mach::vlj.at("V12_NO").c_str(), 1);
+        LJM_eWriteName(handle, mach::vlj.at("V22_NO").c_str(), 1);
+        LJM_eWriteName(handle, mach::vlj.at("V23_NO").c_str(), 1);
+        LJM_eWriteName(handle, mach::vlj.at("V33_NO").c_str(), 1);
+        LJM_eWriteName(handle, mach::vlj.at("V35_NO").c_str(), 1);
+        LJM_eWriteName(handle, mach::vlj.at("V38_NO").c_str(), 1);
         return;
     }
-    if (name == "seq") {
-        // open
+    /*
+     * 3.6.1 which is tank pressurization
+     * open v21
+     * open v32 at the same time preferably
+     *
+     */
+    if (name == "361") {
+        return;
+    }
+    /*
+     * 3.6.2 tank pressurization continued
+     * open v31
+     * 1 second later
+     * close v32
+     */
+    if (name == "362") {
+        return;
+    }
+    /*
+     * 3.5.1 nitrous fill probably
+     * open v21
+     * open v32 at the same time preferably
+     */
+    if(name=="351"){
+        return;
+    }
+    /*
+     * 4.1.1f which i guess is eth
+     * open v21
+     * 10 seconds later
+     * open v20 (t-0)
+     * 7 seconds later
+     * close v21
+     * 3 seconds later
+     * close v20
+     */
+    if (name == "411f") {
+        //open v21
+//        LJM_eWriteName(handle, vlj.at("V21").c_str(), 0);
+        std::this_thread::sleep_for(10s);
+        //open v20
+        LJM_eWriteName(handle, vlj.at("V20").c_str(), 0);
+        std::this_thread::sleep_for(7s);
+        //close v21
+        LJM_eWriteName(handle, vlj.at("V21").c_str(), 1);
         std::this_thread::sleep_for(3s);
+        // close v20
+        LJM_eWriteName(handle, vlj.at("V20").c_str(), 1);
         // close
+        return;
+    }
+    /*
+     * 4.1.1o which i guess is oxidizer
+     * open v34
+     * 10 seconds later
+     * close v34
+     * open v30 preferably at same time (t-0)
+     * 3 seconds later
+     * close v30
+     * close v31 preferably at the same time
+     * open v33 preferably also at the same time
+     * 7 seconds later
+     * close v33
+     */
+    if (name == "411o") {
+        //open v34
+        LJM_eWriteName(handle, vlj.at("V34").c_str(), 0);
+        std::this_thread::sleep_for(10s);
+        // close v34
+        LJM_eWriteName(handle, vlj.at("V34").c_str(), 1);
+        // open v30
+        LJM_eWriteName(handle, vlj.at("V30").c_str(), 0);
+        std::this_thread::sleep_for(3s);
+        //close v30 and v31 and open v33
+        LJM_eWriteName(handle, vlj.at("V30").c_str(), 1);
+        LJM_eWriteName(handle, vlj.at("V31").c_str(), 1);
+        LJM_eWriteName(handle, vlj.at("V33_NO").c_str(), 0);
+        std::this_thread::sleep_for(7s);
+        LJM_eWriteName(handle, vlj.at("V33_NO").c_str(), 1);
+        return;
+    };
+    /*
+     * 4.1.1 which i guess is oxidizer final
+     * open v34
+     * 10 seconds later
+     * close v34
+     * (IGNITER LATER) [t-0]
+     * supposed thermocouple detection
+     * open v20
+     * .25 seconds later
+     * open v30
+     * 5 seconds later
+     * close v30
+     * close v31 preferably at the same time
+     * open v33 preferably also at the same time
+     * 7 seconds later
+     * close v33
+     * close v21
+     */
+    if (name=="411"){
+        return;
+    }
+    /*
+     * close v11, v12, v35, v36, v23
+     */
+    if(name=="cavv"){
+        return;
+    }
+    /*
+     * open v11,v12,v35,v36,v23
+     */
+    if(name=="oavv"){
         return;
     }
     size_t nindex = name.rfind('_');
     std::string valve = name.substr(0, nindex);
-    std::string status = name.substr(nindex+1);
-    std::cout<<valve<<status<<std::endl;
-    if(status=="open")
-        LJM_eWriteName(handle, mach::vlj.at(valve).c_str(), 0);
-    else
-        LJM_eWriteName(handle, mach::vlj.at(valve).c_str(), 1);
+    std::string status = name.substr(nindex + 1);
+    std::cout << valve << status << std::endl;
+    size_t count = std::count_if(name.begin(), name.end(), [](char c) { return c == '_'; });
+    if (count == 2) {
+        if (status == "open")
+            LJM_eWriteName(handle, mach::vlj.at(valve).c_str(), 1);
+        else
+            LJM_eWriteName(handle, mach::vlj.at(valve).c_str(), 0);
+    } else {
+        if (status == "open")
+            LJM_eWriteName(handle, mach::vlj.at(valve).c_str(), 0);
+        else
+            LJM_eWriteName(handle, mach::vlj.at(valve).c_str(), 1);
+    }
+
 }
+
 void mach::SocketConn::start() { _read(); }
 
 mach::SocketConn::SocketConn(ba::any_io_executor const &ioContext,
-                             std::stop_source &stopSource, const int& lj)
+                             std::stop_source &stopSource, const int &lj)
         : _s(ioContext), _ss(stopSource), labjack(lj) {};
 
 void mach::SocketConn::input() {

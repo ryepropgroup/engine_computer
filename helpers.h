@@ -13,23 +13,46 @@ namespace bs = boost::signals2;
 using json = nlohmann::json;
 using namespace std::chrono_literals;
 namespace mach {
+    union udouble {
+        double d;
+        unsigned long long u;
+    };
     const std::map<std::string, std::string> vlj = {
-            {"V10",    "DIO21"},
             {"V11_NO", "DIO0"},
-            {"V12_NO", "DIO2"},
-            {"V20",    "DIO4"},
-            {"V21",    "DIO6"},
-            {"V22_NO", "DIO22"},
-            {"V23_NO", "DIO20"},
             {"V30",    "DIO1"},
+            {"V12_NO", "DIO2"},
             {"V31",    "DIO3"},
+            {"V20",    "DIO4"},
             {"V32",    "DIO5"},
+            {"V21",    "DIO6"},
             {"V33_NO", "DIO7"},
-            {"V34",    "DIO13"},
-            {"V35_NO", "DIO9"},
-            {"V36",    "DIO11"},
-            {"V37",    "DIO18"},
-            {"V38_NO", "DIO16"},
+            {"V35_NO", "DIO8"},
+            {"V36",    "DIO9"},
+            {"V34",    "DIO10"},
+            {"V38_NO", "DIO11"},
+            {"V37",    "DIO12"},
+            {"V23_NO", "DIO13"},
+            {"V10",    "DIO14"},
+            {"V22_NO", "DIO15"},
+    };
+
+    const std::map<std::string, std::string> vljf = {
+            {"DIO0", "V11_NO"},
+            {"DIO1",    "V30"},
+            {"DIO2", "V12_NO"},
+            {"DIO3",    "V31"},
+            {"DIO4",    "V20"},
+            {"DIO5",    "V32"},
+            {"DIO6",    "V21"},
+            {"DIO7", "V33_NO"},
+            {"DIO8", "V35_NO"},
+            {"DIO9",    "V36"},
+            {"DIO10",    "V34"},
+            {"DIO11", "V38_NO"},
+            {"DIO12",    "V37"},
+            {"DIO13", "V23_NO"},
+            {"DIO14",    "V10"},
+            {"DIO15", "V22_NO"},
     };
     inline std::mutex coutm;
     struct Sensor;
