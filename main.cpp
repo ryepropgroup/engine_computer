@@ -49,16 +49,16 @@ int main() {
         err = LJM_Open(LJM_dtANY, LJM_ctANY, "SlowJack", &handle);
         ErrorCheck(err, "LJM_Open");
         err = LJM_eWriteNames(handle, int(sharedState->lj.p10->params.size()),
-                              vectorToChar(sharedState->lj.p10->params),
-                              vectorToDouble(sharedState->lj.p10->settings), &errorAddress);
+                              mach::vectorToChar(sharedState->lj.p10->params),
+                              mach::vectorToDouble(sharedState->lj.p10->settings), &errorAddress);
         ErrorCheck(err, "LJM_eWriteNames");
         err = LJM_eWriteNames(handle, int(sharedState->lj.p21->params.size()),
-                              vectorToChar(sharedState->lj.p21->params),
-                              vectorToDouble(sharedState->lj.p21->settings), &errorAddress);
+                              mach::vectorToChar(sharedState->lj.p21->params),
+                              mach::vectorToDouble(sharedState->lj.p21->settings), &errorAddress);
         ErrorCheck(err, "LJM_eWriteNames");
         err = LJM_eWriteNames(handle, int(sharedState->lj.p31->params.size()),
-                              vectorToChar(sharedState->lj.p31->params),
-                              vectorToDouble(sharedState->lj.p31->settings), &errorAddress);
+                              mach::vectorToChar(sharedState->lj.p31->params),
+                              mach::vectorToDouble(sharedState->lj.p31->settings), &errorAddress);
         ErrorCheck(err, "LJM_eWriteNames");}
     catch (...) {
         std::cout << "LABJACK ISSUE" << std::endl;
@@ -88,7 +88,7 @@ int main() {
         }
         err = LJM_eReadName(handle, sharedState->lj.p10->name.c_str(), &sharedState->lj.p10val);
         err = LJM_eReadName(handle, sharedState->lj.p21->name.c_str(), &sharedState->lj.p21val);
-        err = LJM_eReadName(handle, sharedState->lj.p31val->name.c_str(), &sharedState->lj.p31val);
+        err = LJM_eReadName(handle, sharedState->lj.p31->name.c_str(), &sharedState->lj.p31val);
 //        err = LJM_eReadName(handle, sharedState->lj.t2->name.c_str(), &sharedState->lj.t2val);
         sharedState->lj.p10val *= 300;
         sharedState->lj.p21val *= 300;
