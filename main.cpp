@@ -31,17 +31,7 @@ namespace ba = boost::asio;
 //        long elapsed = now-utn;
 //        std::string strelapsed = std::to_string(now);
 //        // TODO: move reading to other thread
-//        err = LJM_eReadName(handle, st->lj.p1->name.c_str(), &st->lj.p1val);
-//        ErrorCheck(err, "LJM_eReadName");
-//        err = LJM_eReadName(handle, st->lj.p2->name.c_str(), &st->lj.p2val);
-//        ErrorCheck(err, "LJM_eReadName");
-//        err = LJM_eReadName(handle, st->lj.p3->name.c_str(), &st->lj.p3val);
-//        ErrorCheck(err, "LJM_eReadName");
-//        err = LJM_eReadName(handle, st->lj.t1->name.c_str(), &st->lj.t1val);
-//        ErrorCheck(err, "LJM_eReadName");
-//        st->lj.p1val *= 300;
-//        st->lj.p2val *= 300;
-//        st->lj.p3val *= 300;
+
 //        file<<strelapsed<<","<<std::to_string(st->lj.t1val)<<","<<std::to_string(st->lj.p1val)<<","<<std::to_string(st->lj.p2val)<<","<<std::to_string(st->lj.p3val)<<std::endl;
 //        s->emit(st);
 //    }
@@ -58,7 +48,18 @@ int main() {
     try {
         err = LJM_Open(LJM_dtANY, LJM_ctANY, "SlowJack", &handle);
         ErrorCheck(err, "LJM_Open");
-        }
+        err = LJM_eWriteNames(handle, int(sharedState->lj.p10->params.size()),
+                              vectorToChar(sharedState->lj.p10->params),
+                              vectorToDouble(sharedState->lj.p10->settings), &errorAddress);
+        ErrorCheck(err, "LJM_eWriteNames");
+        err = LJM_eWriteNames(handle, int(sharedState->lj.p21->params.size()),
+                              vectorToChar(sharedState->lj.p21->params),
+                              vectorToDouble(sharedState->lj.p21->settings), &errorAddress);
+        ErrorCheck(err, "LJM_eWriteNames");
+        err = LJM_eWriteNames(handle, int(sharedState->lj.p31->params.size()),
+                              vectorToChar(sharedState->lj.p31->params),
+                              vectorToDouble(sharedState->lj.p31->settings), &errorAddress);
+        ErrorCheck(err, "LJM_eWriteNames");}
     catch (...) {
         std::cout << "LABJACK ISSUE" << std::endl;
     }
@@ -78,14 +79,20 @@ int main() {
             std::string k = "DIO"+std::to_string(i);
             char v = vals.at(i);
             int nb = v-'0';
-//            std::cout<<k<<mach::vljf.at(k)<<state[mach::vljf.at(k)]<<std::endl;
             if(mach::vljf.at(k).find('_')!=std::string::npos){
-                state[mach::vljf.at(k)] = nb;
+               state[mach::vljf.at(k)] = nb;
             }
             else{
                 state[mach::vljf.at(k)] = !nb;
             }
         }
+        err = LJM_eReadName(handle, sharedState->lj.p10->name.c_str(), &sharedState->lj.p10val);
+        err = LJM_eReadName(handle, sharedState->lj.p21->name.c_str(), &sharedState->lj.p21val);
+        err = LJM_eReadName(handle, sharedState->lj.p31val->name.c_str(), &sharedState->lj.p31val);
+        err = LJM_eReadName(handle, sharedState->lj.t2->name.c_str(), &sharedState->lj.t2val);
+        sharedState->lj.p10val *= 300;
+        sharedState->lj.p21val *= 300;
+        sharedState->lj.p31val *= 300;
         sharedState->setValves(state);
 //        std::cout<<sharedState->toJSON()<<std::endl;
         s.emit(sharedState);
