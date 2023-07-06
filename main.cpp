@@ -89,7 +89,7 @@ int main() {
         err = LJM_eReadName(handle, sharedState->lj.p10->name.c_str(), &sharedState->lj.p10val);
         err = LJM_eReadName(handle, sharedState->lj.p21->name.c_str(), &sharedState->lj.p21val);
         err = LJM_eReadName(handle, sharedState->lj.p31val->name.c_str(), &sharedState->lj.p31val);
-        err = LJM_eReadName(handle, sharedState->lj.t2->name.c_str(), &sharedState->lj.t2val);
+//        err = LJM_eReadName(handle, sharedState->lj.t2->name.c_str(), &sharedState->lj.t2val);
         sharedState->lj.p10val *= 300;
         sharedState->lj.p21val *= 300;
         sharedState->lj.p31val *= 300;
