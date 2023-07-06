@@ -94,7 +94,8 @@ int main() {
         sharedState->lj.p21val *= 300;
         sharedState->lj.p31val *= 300;
         sharedState->setValves(state);
-        std::cout<<sharedState->toJSON()<<std::endl;
+        std::cout<<sharedState.lj.p10val<<std::endl;
+//        std::cout<<sharedState->toJSON()<<std::endl;
         s.emit(sharedState);
     }
     s.stop();
