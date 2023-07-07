@@ -1,48 +1,44 @@
 #include "LabJackM.h"
 #include <bitset>
 #include <boost/asio.hpp>
-#include <boost/signals2.hpp>
 #include <fstream>
 #include <iostream>
-#include <modbus/modbus-tcp.h>
-#include <thread>
-#include <utility>
 #include "helpers.h"
 #include "LJM_Utilities.h"
 
 using namespace std::chrono_literals;
 namespace ba = boost::asio;
 
+std::stop_source test;
+std::stop_token token = test.get_token();
 
-//void run_signal(const std::stop_token *t, mach::Server *s, const std::shared_ptr<mach::State> st) {
-//    // LabJack Initialization
-//    long utn = std::chrono::duration_cast<std::chrono::seconds>(
-//                    std::chrono::system_clock::now().time_since_epoch()).count();
-//    std::string utns = std::to_string(utn);
-//    std::string filename = utns += ".csv";
-//
-//    std::ofstream file(filename);
-//    file<<"elapsed"<<","<<"t3"<<","<<"p31"<<","<<"p21"<<","<<"p10"<<std::endl;
-//
-//    while (!t->stop_requested()) {
-//        //TODO: move writing to main function
-//        long now = std::chrono::duration_cast<std::chrono::seconds>(
-//                std::chrono::system_clock::now().time_since_epoch()).count();
-//        long elapsed = now-utn;
-//        std::string strelapsed = std::to_string(now);
-//        // TODO: move reading to other thread
+void handlesigint(int signal_num){
+  test.request_stop();
+  exit(signal_num);
+}
+void run_signal(const std::shared_ptr<mach::State> st) {
+    // LabJack Initialization
+    long utn = std::chrono::duration_cast<std::chrono::seconds>(
+                    std::chrono::system_clock::now().time_since_epoch()).count();
+    std::string utns = std::to_string(utn);
+    std::string filename = utns += ".csv";
 
-//        file<<strelapsed<<","<<std::to_string(st->lj.t1val)<<","<<std::to_string(st->lj.p1val)<<","<<std::to_string(st->lj.p2val)<<","<<std::to_string(st->lj.p3val)<<std::endl;
-//        s->emit(st);
-//    }
-//    std::lock_guard<std::mutex> l(mach::coutm);
-//    std::cout << "done" << std::endl;
-//}
+    std::ofstream file(filename);
+    file<<"elapsed"<<","<<"p31"<<","<<"p21"<<","<<"p10"<<std::endl;
+
+    while (!token->stop_requested()) {
+        long now = std::chrono::duration_cast<std::chrono::seconds>(
+                std::chrono::system_clock::now().time_since_epoch()).count();
+        long elapsed = now-utn;
+        std::string strelapsed = std::to_string(now);
+        file<<strelapsed<<","<<std::to_string(st->lj.p31val)<<","<<std::to_string(st->lj.p21val)<<","<<std::to_string(st->lj.p10val)<<"\n";
+    }
+    file<<std::endl;
+}
 
 int main() {
+    signal(SIGINT, handlesigint);
     std::shared_ptr<mach::State> sharedState(new mach::State);
-    std::stop_source test;
-    std::stop_token token = test.get_token();
     ba::io_context ioContext;
     int err, handle, errorAddress = INITIAL_ERR_ADDRESS;
     try {
@@ -65,6 +61,7 @@ int main() {
     }
     mach::Server s(ioContext, test, sharedState, handle);
     std::jthread th([&ioContext] { ioContext.run(); });
+    std::jthread th2(run_signal, sharedState);
     std::this_thread::sleep_for(10s);
     while (!token.stop_requested()) {
         std::this_thread::sleep_for(10ms);
@@ -101,6 +98,7 @@ int main() {
         s.emit(sharedState);
     }
     s.stop();
+    th2.join();
     th.join();
     return 0;
 }
