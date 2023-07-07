@@ -34,7 +34,7 @@ void run_signal(const std::shared_ptr<mach::State> st) {
        << "p10" << std::endl;
 
   while (!token.stop_requested()) {
-    std::this_thread::sleep_for(5000us);
+    std::this_thread::sleep_for(50us);
     long now = std::chrono::duration_cast<std::chrono::seconds>(
                    std::chrono::system_clock::now().time_since_epoch())
                    .count();
