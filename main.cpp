@@ -26,7 +26,7 @@ void run_signal(const std::shared_ptr<mach::State> st) {
     std::ofstream file(filename);
     file<<"elapsed"<<","<<"p31"<<","<<"p21"<<","<<"p10"<<std::endl;
 
-    while (!token->stop_requested()) {
+    while (!token.stop_requested()) {
         long now = std::chrono::duration_cast<std::chrono::seconds>(
                 std::chrono::system_clock::now().time_since_epoch()).count();
         long elapsed = now-utn;
