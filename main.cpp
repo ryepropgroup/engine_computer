@@ -87,14 +87,10 @@ int main() {
         err = LJM_eReadName(handle, sharedState->lj.p21->name.c_str(), &sharedState->lj.p21val);
         err = LJM_eReadName(handle, sharedState->lj.p31->name.c_str(), &sharedState->lj.p31val);
 //        err = LJM_eReadName(handle, sharedState->lj.t2->name.c_str(), &sharedState->lj.t2val);
-      std::cout<<sharedState->lj.p10val<<std::endl;
-      std::cout<<"-----------"<<std::endl;
         sharedState->lj.p10val *= 300;
         sharedState->lj.p21val *= 300;
         sharedState->lj.p31val *= 300;
         sharedState->setValves(state);
-        std::cout<<sharedState->lj.p10val<<std::endl;
-//        std::cout<<sharedState->toJSON()<<std::endl;
         s.emit(sharedState);
     }
     s.stop();
