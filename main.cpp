@@ -12,7 +12,7 @@ namespace ba = boost::asio;
 std::stop_source test;
 std::stop_token token = test.get_token();
 
-void handlesigint(int signal_num) {
+void handlesigint(const int signal_num) {
   test.request_stop();
   exit(signal_num);
 }

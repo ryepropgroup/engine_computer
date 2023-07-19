@@ -17,7 +17,7 @@ union udouble {
   double d;
   unsigned long long u;
 };
-const std::map<std::string, std::string> vlj = {
+inline const std::map<std::string, std::string> vlj = {
     {"V11_NO", "DIO0"},  {"V30", "DIO1"},     {"V12_NO", "DIO2"},
     {"V31", "DIO3"},     {"V20", "DIO4"},     {"V32", "DIO5"},
     {"V21", "DIO6"},     {"V33_NO", "DIO7"},  {"V35_NO", "DIO8"},
@@ -26,7 +26,7 @@ const std::map<std::string, std::string> vlj = {
     {"V22_NO", "DIO15"},
 };
 
-const std::map<std::string, std::string> vljf = {
+inline const std::map<std::string, std::string> vljf = {
     {"DIO0", "V11_NO"},  {"DIO1", "V30"},     {"DIO2", "V12_NO"},
     {"DIO3", "V31"},     {"DIO4", "V20"},     {"DIO5", "V32"},
     {"DIO6", "V21"},     {"DIO7", "V33_NO"},  {"DIO8", "V35_NO"},
@@ -34,6 +34,7 @@ const std::map<std::string, std::string> vljf = {
     {"DIO12", "V37"},    {"DIO13", "V23_NO"}, {"DIO14", "V10"},
     {"DIO15", "V22_NO"},
 };
+
 inline std::mutex coutm;
 struct Sensor;
 struct LJSensors;
@@ -41,7 +42,7 @@ struct SocketConn;
 struct Server;
 inline unsigned short PORT = 6969;
 
-void dispatchValve(std::string name, int handle);
+void dispatchValve(const std::string name, const int handle);
 
 const char **vectorToChar(const std::vector<std::string> &stringVector);
 
@@ -174,12 +175,12 @@ struct SocketConn : std::enable_shared_from_this<SocketConn> {
 
   void start();
 
-  void send(std::string msg, bool immediate = false);
+  void send(const std::string msg, const bool immediate = false);
 
 private:
   void input();
 
-  bool nq(std::string msg, bool immediate);
+  bool nq(const std::string msg, const bool immediate);
 
   // return true if messages are pending post-dequeue
   bool dq();

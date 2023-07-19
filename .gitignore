@@ -1,7 +1,9 @@
 /cmake-build-debug/
+/cmake-build-gcc/
 /.idea
 /.cache
 /compile_commands.json
+/engine_computer
 /Makefile
 /CMakeCache.txt
 /CMakeFiles
