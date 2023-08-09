@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <modbus/modbus-tcp.h>
+#include <string>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -40,7 +41,7 @@ struct Sensor;
 struct LJSensors;
 struct SocketConn;
 struct Server;
-inline unsigned short PORT = 6969;
+inline unsigned short PORT = 6970;
 
 void dispatchValve(const std::string name, const int handle);
 
@@ -63,26 +64,33 @@ struct Sensor {
 
 struct LJSensors {
   // TODO: swap to proper AINs to change
-  double p10val = 0, p21val = 0, p31val = 0, t2val, t3val;
+  double p10val = 0, p21val = 0, p31val = 0, t2val = 0, p22val = 0, p32val = 0;
   mach::Sensor *p31 = // p31
-      new Sensor(std::string("AIN0"),
-                 std::vector<std::string>{"AIN0_range", /*"AIN0_NEGATIVE_CH"*/},
-                 std::vector<double>{10 /*, 1.0*/});
-  mach::Sensor *p21 = // p21
       new Sensor(std::string("AIN2"),
                  std::vector<std::string>{"AIN2_range", /*"AIN2_NEGATIVE_CH"*/},
+                 std::vector<double>{10 /*, 1.0*/});
+  mach::Sensor *p21 = // p21
+      new Sensor(std::string("AIN4"),
+                 std::vector<std::string>{"AIN4_range", /*"AIN4_NEGATIVE_CH"*/},
                  std::vector<double>{10 /*, 3.0*/});
   mach::Sensor *p10 = // p10
       new Sensor(
-          std::string("AIN4"),
-          std::vector<std::string>{"AIN4_range" /*, "AIN4_NEGATIVE_CH"*/},
+          std::string("AIN6"),
+          std::vector<std::string>{"AIN6_range" /*, "AIN6_NEGATIVE_CH"*/},
           std::vector<double>{10 /*, 5.0*/});
-  mach::Sensor *t2 =
-      new Sensor(std::string("AIN6_EF_READ_A"),
-                 std::vector<std::string>{
-                     "AIN6_EF_INDEX", "AIN6_EF_CONFIG_B", "AIN6_EF_CONFIG_D",
-                     "AIN6_EF_CONFIG_E", "AIN6_EF_CONFIG_A"},
-                 std::vector<double>{22, 60052, 1.0, 0.0, 1});
+  mach::Sensor *p22 = // p22
+      new Sensor(std::string("AIN11"), std::vector<std::string>{"AIN11_range"},
+                 std::vector<double>{10});
+  mach::Sensor *p32 = // p22
+      new Sensor(std::string("AIN3"), std::vector<std::string>{"AIN3_range"},
+                 std::vector<double>{10});
+  // mach::Sensor *t2 =
+  //     new Sensor(std::string("AIN0_EF_READ_A"),
+  //                std::vector<std::string>{
+  //                    "AIN0_EF_INDEX", "AIN0_EF_CONFIG_B", "AIN0_EF_CONFIG_D",
+  //                    "AIN0_EF_CONFIG_E", "AIN0_EF_CONFIG_A",
+  //                    "AIN0_NEGATIVE_CH"},
+  //                std::vector<double>{22, 60052, 1.0, 0.0, 1, 1});
 
   mach::Sensor *t3 =
       new Sensor(std::string("AIN6_EF_READ_A"),
@@ -124,7 +132,7 @@ public:
     std::vector<std::string> db = {
         std::to_string(int(lj.p10val)), std::to_string(int(lj.p21val)),
         std::to_string(int(lj.p31val)), std::to_string(int(lj.t2val)),
-        std::to_string(int(lj.t3val))};
+        std::to_string(int(lj.t2val))};
     for (auto &d : db) {
       while (d.length() < 4) {
         d = "0" + d;
