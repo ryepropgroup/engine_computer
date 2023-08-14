@@ -7,6 +7,8 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
+#define MCAP_IMPLEMENTATION
+#include <mcap/writer.hpp>
 
 using namespace std::chrono_literals;
 namespace ba = boost::asio;
@@ -16,6 +18,7 @@ std::stop_token token = test.get_token();
 int handle;
 int spr{1};
 int numaddr{7};
+// AIN7, AIN14, AIN2, AIN4, AIN6, AIN11, AIN3
 const std::array<int, 7> scanList{14, 28, 4, 8, 12, 22, 6};
 auto scanListC = scanList.data();
 double *scanRate = new double{10};
@@ -132,17 +135,17 @@ int main() {
     double dTempK = (aData[1] * -92.6 + 467.6);
     err = LJM_TCVoltsToTemp(6004, aData[0], dTempK, &t1K);
     sharedState->lj.t2val = (t1K);
-    sharedState->lj.p10val = (aData[5]*300);
-    sharedState->lj.p21val = (aData[4]*300);
-    sharedState->lj.p31val = (aData[3]*300);
-    sharedState->lj.p22val = (aData[6]*300);
-    sharedState->lj.p32val = (aData[7]*300);
-    std::cout<<"t2val:"<<sharedState->lj.t2val<<" ";
-    std::cout<<"p10val:"<<sharedState->lj.p10val<<"\n";
-    std::cout<<"p21val:"<<sharedState->lj.p21val<<" ";
-    std::cout<<"p31val:"<<sharedState->lj.p31val<<"\n";
-    std::cout<<"p22val:"<<sharedState->lj.p22val<<" ";
-    std::cout<<"p32val:"<<sharedState->lj.p32val<<"\n";
+    sharedState->lj.p10val = (aData[5] * 300);
+    sharedState->lj.p21val = (aData[4] * 300);
+    sharedState->lj.p31val = (aData[3] * 300);
+    sharedState->lj.p22val = (aData[6] * 300);
+    sharedState->lj.p32val = (aData[7] * 300);
+    std::cout << "t2val:" << sharedState->lj.t2val << " ";
+    std::cout << "p10val:" << sharedState->lj.p10val << "\n";
+    std::cout << "p21val:" << sharedState->lj.p21val << " ";
+    std::cout << "p31val:" << sharedState->lj.p31val << "\n";
+    std::cout << "p22val:" << sharedState->lj.p22val << " ";
+    std::cout << "p32val:" << sharedState->lj.p32val << "\n";
     // err = LJM_eReadName(handle, sharedState->lj.p10->name.c_str(),
     //                      &sharedState->lj.p10val);
     //  err = LJM_eReadName(handle, sharedState->lj.p21->name.c_str(),

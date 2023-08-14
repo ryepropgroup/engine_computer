@@ -1,9 +1,8 @@
-#include "./lib/json.hpp"
 #include <boost/asio.hpp>
 #include <boost/signals2.hpp>
 #include <fstream>
 #include <iostream>
-#include <modbus/modbus-tcp.h>
+#include <nlohmann/json.hpp>
 #include <string>
 #include <thread>
 #include <utility>
@@ -81,7 +80,7 @@ struct LJSensors {
   mach::Sensor *p22 = // p22
       new Sensor(std::string("AIN11"), std::vector<std::string>{"AIN11_range"},
                  std::vector<double>{10});
-  mach::Sensor *p32 = // p22
+  mach::Sensor *p32 = // p32
       new Sensor(std::string("AIN3"), std::vector<std::string>{"AIN3_range"},
                  std::vector<double>{10});
   // mach::Sensor *t2 =
