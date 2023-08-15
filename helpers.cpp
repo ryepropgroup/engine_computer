@@ -36,10 +36,12 @@ void mach::dispatchValve(const std::string name, int handle) {
   if(name=="wstart"){
     enabled = true;
     suspend_write.notify_all();
+    return;
   }
   if(name=="wstop"){
     enabled=false;
     suspend_write.notify_all();
+    return;
   }
   if (name == "stop") {
     LJM_eWriteName(handle, mach::vlj.at("V10").c_str(), 1);
