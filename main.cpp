@@ -33,9 +33,11 @@ void handlesigint(const int signal_num) {
 void run_signal(const std::shared_ptr<mach::State> st) {
   auto old_time = mach::now();
   auto utn = mach::now();
-  auto filename = std::format("{:%Y-%m-%d-%X}", std::chrono::current_zone()->to_local(std::chrono::system_clock::now()));
-  std::string utns = std::string(filename) + ".csv";
-  std::ofstream file(utns);
+  auto filename =
+      std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+  std::ostringstream utns;
+  utns << std::put_time(std::localtime(&filename), "%F-%T");
+  std::ofstream file(utns.str()+".csv");
   if (!file.is_open()) {
     std::cerr << "file not available" << std::endl;
     return;
@@ -60,7 +62,7 @@ void run_signal(const std::shared_ptr<mach::State> st) {
     std::unique_lock<std::mutex> lock(writem);
     suspend_write.wait(lock, [] { return bool(enabled); });
     mach::Timestamp now = mach::now();
-    if((now - old_time)> 0) {
+    if ((now - old_time) > 0) {
       file << now << "," << st->lj.p31val << "," << st->lj.p21val << ","
            << st->lj.p10val << "\n";
       old_time = now;
