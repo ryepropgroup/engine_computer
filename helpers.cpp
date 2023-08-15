@@ -4,6 +4,12 @@
 #include <string>
 #include <vector>
 
+mach::Timestamp mach::now() {
+  return mach::Timestamp(
+      std::chrono::duration_cast<std::chrono::nanoseconds>(
+          std::chrono::high_resolution_clock::now().time_since_epoch())
+          .count());
+}
 const double *mach::vectorToDouble(const std::vector<double> &doubleVector) {
   return doubleVector.data();
 }

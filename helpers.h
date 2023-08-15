@@ -13,6 +13,8 @@ namespace bs = boost::signals2;
 using json = nlohmann::json;
 using namespace std::chrono_literals;
 namespace mach {
+using Timestamp = uint64_t;
+mach::Timestamp now();
 union udouble {
   double d;
   unsigned long long u;

@@ -7,8 +7,6 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
-#define MCAP_IMPLEMENTATION
-#include <mcap/writer.hpp>
 
 using namespace std::chrono_literals;
 namespace ba = boost::asio;
@@ -29,21 +27,16 @@ void handlesigint(const int signal_num) {
   exit(signal_num);
 }
 void run_signal(const std::shared_ptr<mach::State> st) {
+  auto utn = mach::now();
+  std::string utns = std::to_string(utn) + ".something";
   // LabJack Initialization
-  long utn = std::chrono::duration_cast<std::chrono::seconds>(
-                 std::chrono::system_clock::now().time_since_epoch())
-                 .count();
-  std::string utns = std::to_string(utn);
-  std::string filename = utns += ".csv";
-
-  std::ofstream file(filename);
-  file << "elapsed"
-       << ","
-       << "p31"
-       << ","
-       << "p21"
-       << ","
-       << "p10" << std::endl;
+//  file << "elapsed"
+//       << ","
+//       << "p31"
+//       << ","
+//       << "p21"
+//       << ","
+//       << "p10" << std::endl;
 
   while (!token.stop_requested()) {
     std::this_thread::sleep_for(50us);
@@ -52,11 +45,10 @@ void run_signal(const std::shared_ptr<mach::State> st) {
                    .count();
     long elapsed = now - utn;
     std::string strelapsed = std::to_string(now);
-    file << strelapsed << "," << std::to_string(st->lj.p31val) << ","
-         << std::to_string(st->lj.p21val) << ","
-         << std::to_string(st->lj.p10val) << "\n";
+//    file << strelapsed << "," << std::to_string(st->lj.p31val) << ","
+//         << std::to_string(st->lj.p21val) << ","
+//         << std::to_string(st->lj.p10val) << "\n";
   }
-  file << std::endl;
 }
 
 int main() {
