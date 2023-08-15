@@ -1,5 +1,0 @@
-include(FindProtobuf)
-Find_Package(Protobuf REQUIRED)
-Include_Directories(${Protobuf_INCLUDE_DIR})
-PROTOBUF_GENERATE_CPP(PROTO_SRC PROTO_HEADER log.proto)
-message("PROTOBUF DEFINITIONS GENERATED!")

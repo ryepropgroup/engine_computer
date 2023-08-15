@@ -3,7 +3,8 @@
 #include <memory>
 #include <string>
 #include <vector>
-
+extern std::atomic<bool> enabled;
+extern std::condition_variable suspend_write;
 mach::Timestamp mach::now() {
   return mach::Timestamp(
       std::chrono::duration_cast<std::chrono::nanoseconds>(
@@ -32,6 +33,14 @@ void mach::SocketConn::send(std::string msg, bool immediate) {
 }
 
 void mach::dispatchValve(const std::string name, int handle) {
+  if(name=="wstart"){
+    enabled = true;
+    suspend_write.notify_all();
+  }
+  if(name=="wstop"){
+    enabled=false;
+    suspend_write.notify_all();
+  }
   if (name == "stop") {
     LJM_eWriteName(handle, mach::vlj.at("V10").c_str(), 1);
     LJM_eWriteName(handle, mach::vlj.at("V21").c_str(), 1);

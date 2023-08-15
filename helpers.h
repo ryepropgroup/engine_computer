@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iostream>
 #include <nlohmann/json.hpp>
+#include <shared_mutex>
 #include <string>
 #include <thread>
 #include <utility>
@@ -64,8 +65,8 @@ struct Sensor {
 };
 
 struct LJSensors {
-  // TODO: swap to proper AINs to change
   double p10val = 0, p21val = 0, p31val = 0, t2val = 0, p22val = 0, p32val = 0;
+  // TODO: swap to proper AINs to change
   mach::Sensor *p31 = // p31
       new Sensor(std::string("AIN2"),
                  std::vector<std::string>{"AIN2_range", /*"AIN2_NEGATIVE_CH"*/},
@@ -105,7 +106,7 @@ struct State {
 private:
   bool launched = false;
   std::map<std::string, bool> valves;
-  mutable std::mutex slock;
+  mutable std::shared_mutex slock;
 
 public:
   LJSensors lj;
@@ -129,7 +130,7 @@ public:
   }
 
   [[nodiscard]] json toJSON() const {
-    std::lock_guard<std::mutex> guard(slock);
+    std::shared_lock guard(slock);
     std::vector<std::string> db = {
         std::to_string(int(lj.p10val)), std::to_string(int(lj.p21val)),
         std::to_string(int(lj.p31val)), std::to_string(int(lj.t2val)),
@@ -151,22 +152,22 @@ public:
   }
 
   [[nodiscard]] bool isLaunched() const {
-    std::lock_guard<std::mutex> guard(slock);
+    std::shared_lock guard(slock);
     return launched;
   }
 
   void setLaunched(bool status) {
-    std::lock_guard<std::mutex> guard(slock);
+    std::unique_lock guard(slock);
     State::launched = status;
   }
 
   [[nodiscard]] const std::map<std::string, bool> &getValves() const {
-    std::lock_guard<std::mutex> guard(slock);
+    std::shared_lock guard(slock);
     return valves;
   }
 
   void setValves(const std::map<std::string, bool> &v) {
-    std::lock_guard<std::mutex> guard(slock);
+    std::unique_lock guard(slock);
     State::valves = v;
   }
 };
