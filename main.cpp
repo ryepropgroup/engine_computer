@@ -23,11 +23,18 @@ double *scanRate = new double{10};
 std::mutex writem;
 std::condition_variable suspend_write;
 std::atomic<bool> enabled = true;
+std::vector<std::jthread> threads{};
 
 void handlesigint(const int signal_num) {
   test.request_stop();
+  std::cout<<"Disconnecting LabJack..."<<"\n";
   int err = LJM_eStreamStop(handle);
   ErrorCheck(err, "LJM_eStreamStop");
+  std::cout<<"Killing Threads"<<std::endl;
+  for(auto& thread: threads){
+    thread.request_stop();
+    thread.join();
+  }
   exit(signal_num);
 }
 void run_signal(const std::shared_ptr<mach::State> st) {
@@ -112,7 +119,7 @@ int main() {
     std::cout << "LABJACK ISSUE" << std::endl;
   }
   mach::Server s(ioContext, test, sharedState, handle);
-  std::jthread th([&ioContext] { ioContext.run(); });
+  threads.emplace_back([&ioContext] { ioContext.run(); });
   std::jthread th2(run_signal, sharedState);
   //  err = LJM_eWriteName(handle, "STREAM_TRIGGER_INDEX", 0);
   //  err = LJM_eWriteName(handle, "AIN0_RESOLUTION_INDEX", 0);
@@ -174,7 +181,9 @@ int main() {
   std::this_thread::sleep_for(10s);
   s.stop();
   test.request_stop();
-  th2.join();
-  th.join();
+  for(auto& thread: threads){
+    thread.request_stop();
+    thread.join();
+  }
   return 0;
 }
