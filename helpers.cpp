@@ -199,14 +199,16 @@ void mach::SocketConn::start() { _read(); }
 
 mach::SocketConn::SocketConn(ba::any_io_executor const &ioContext,
                              std::stop_source &stopSource, const int &lj)
-    : _s(ioContext), _ss(stopSource), labjack(lj){};
+    : _s(ioContext), _ss(stopSource), labjack(lj), qioc((ba::io_context &)ioContext){};
 
 void mach::SocketConn::input() {
   std::string val;
   if (std::getline(std::istream(&_buf), val)) {
     std::lock_guard<std::mutex> l(coutm);
     //        std::cout << val << std::endl;
-    std::jthread(mach::dispatchValve, ref(val), labjack);
+    qioc.post([this, val](){
+      mach::dispatchValve(val, labjack);
+    });
   }
 }
 

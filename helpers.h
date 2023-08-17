@@ -200,6 +200,7 @@ private:
   void _write();
 
   friend struct Server;
+  ba::io_context& qioc;
   boost::asio::streambuf _buf;
   std::list<std::string> _mlist;
   ba::ip::tcp::socket _s;
