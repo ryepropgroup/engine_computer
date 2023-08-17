@@ -63,8 +63,8 @@ void run_signal(const std::shared_ptr<mach::State> st) {
     suspend_write.wait(lock, [] { return bool(enabled); });
     mach::Timestamp now = mach::now();
     if ((now - old_time) > 0) {
-      file << now << "," << st->lj.p31val << "," << st->lj.p21val << ","
-           << st->lj.p10val << "\n";
+      file << now << "," << st->lj.p10val << "," << st->lj.p21val << ","
+           << st->lj.p31val << ","<< st->lj.p22val << ","<< st->lj.p32val << ","<< st->lj.t2val <<"\n";
       old_time = now;
     }
   }
