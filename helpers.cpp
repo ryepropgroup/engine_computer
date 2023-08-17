@@ -206,7 +206,7 @@ void mach::SocketConn::input() {
   if (std::getline(std::istream(&_buf), val)) {
     std::lock_guard<std::mutex> l(coutm);
     //        std::cout << val << std::endl;
-    mach::dispatchValve(val, labjack);
+    std::jthread(mach::dispatchValve, ref(val), labjack);
   }
 }
 
