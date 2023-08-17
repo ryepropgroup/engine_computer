@@ -27,14 +27,14 @@ std::vector<std::jthread> threads{};
 
 void handlesigint(const int signal_num) {
   test.request_stop();
-  std::cout<<"Disconnecting LabJack..."<<"\n";
-  int err = LJM_eStreamStop(handle);
-  ErrorCheck(err, "LJM_eStreamStop");
   std::cout<<"Killing Threads"<<std::endl;
   for(auto& thread: threads){
     thread.request_stop();
     thread.join();
   }
+  std::cout<<"Disconnecting LabJack..."<<"\n";
+  int err = LJM_eStreamStop(handle);
+  ErrorCheck(err, "LJM_eStreamStop");
   exit(signal_num);
 }
 void run_signal(const std::shared_ptr<mach::State> st) {
