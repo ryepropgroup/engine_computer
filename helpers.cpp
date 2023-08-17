@@ -33,6 +33,7 @@ void mach::SocketConn::send(std::string msg, bool immediate) {
 }
 
 void mach::dispatchValve(const std::string name, int handle) {
+  std::cout<<"potato"<<std::endl;
   if(name=="wstart"){
     enabled = true;
     suspend_write.notify_all();
@@ -207,7 +208,7 @@ void mach::SocketConn::input() {
     std::lock_guard<std::mutex> l(coutm);
     //        std::cout << val << std::endl;
     std::lock_guard<std::mutex> v(supersecure);
-    vqueue.push(val);
+    valstr = val;
     vqueuecheck.notify_one();
   }
 }

@@ -41,7 +41,7 @@ inline const std::map<std::string, std::string> vljf = {
 
 inline std::mutex coutm;
 inline std::mutex supersecure;
-inline std::queue<std::string> vqueue;
+inline std::string valstr;
 inline std::condition_variable vqueuecheck;
 struct Sensor;
 struct LJSensors;
