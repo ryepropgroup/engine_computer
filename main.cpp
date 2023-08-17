@@ -140,7 +140,7 @@ int main() {
   //  err = LJM_eWriteName(handle, "AIN0_RANGE", 0.1);
   //  err = LJM_eStreamStart(handle, spr, numaddr, scanListC, scanRate);
   //  ErrorCheck(err, "LJM_eStreamStart");
-  //  while (!token.stop_requested()) {
+    while (!token.stop_requested()) {
   //    int devicebacklog;
   //    int ljmbacklog;
   //    auto *aData = new double[7];
@@ -190,8 +190,8 @@ int main() {
   //    //  sharedState->lj.p21val *= 300;
   //    //  sharedState->lj.p31val *= 300;
   //    sharedState->setValves(state);
-  //    s.emit(sharedState);
-  //  }
+      s.emit(sharedState);
+    }
   std::this_thread::sleep_for(10s);
   s.stop();
   test.request_stop();
