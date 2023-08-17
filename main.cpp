@@ -133,7 +133,7 @@ int main() {
   }
   mach::Server s(ioContext, test, sharedState, handle);
   threads.emplace_back([&ioContext] { ioContext.run(); });
-  threads.emplace_back(run_signal, sharedState));
+  threads.emplace_back(run_signal, sharedState);
   threads.emplace_back(valveActFunc, handle);
   //  err = LJM_eWriteName(handle, "STREAM_TRIGGER_INDEX", 0);
   //  err = LJM_eWriteName(handle, "AIN0_RESOLUTION_INDEX", 0);
