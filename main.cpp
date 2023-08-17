@@ -21,10 +21,23 @@ const std::array<int, 7> scanList{14, 28, 4, 8, 12, 22, 6};
 auto scanListC = scanList.data();
 double *scanRate = new double{10};
 std::mutex writem;
+std::mutex supersecure;
+std::queue<std::string> vqueue{};
 std::condition_variable suspend_write;
+std::condition_variable vqueuecheck;
 std::atomic<bool> enabled = true;
 std::vector<std::jthread> threads{};
 
+void valveActFunc(int handle){
+  while(!token.stop_requested()){
+    std::unique_lock<std::mutex> lock(supersecure);
+    vqueuecheck.wait(lock, []{return !vqueue.empty();});
+    std::string val = vqueue.front();
+    vqueue.pop();
+    lock.unlock();
+    mach::dispatchValve(val, handle);
+  }
+}
 void handlesigint(const int signal_num) {
   test.request_stop();
   std::cout<<"Killing Threads"<<std::endl;
@@ -120,7 +133,8 @@ int main() {
   }
   mach::Server s(ioContext, test, sharedState, handle);
   threads.emplace_back([&ioContext] { ioContext.run(); });
-  std::jthread th2(run_signal, sharedState);
+  threads.emplace_back(run_signal, sharedState));
+  threads.emplace_back(valveActFunc, handle);
   //  err = LJM_eWriteName(handle, "STREAM_TRIGGER_INDEX", 0);
   //  err = LJM_eWriteName(handle, "AIN0_RESOLUTION_INDEX", 0);
   //  err = LJM_eWriteName(handle, "AIN0_RANGE", 0.1);

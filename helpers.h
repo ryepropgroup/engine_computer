@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iostream>
 #include <nlohmann/json.hpp>
+#include <queue>
 #include <shared_mutex>
 #include <string>
 #include <thread>
@@ -39,6 +40,9 @@ inline const std::map<std::string, std::string> vljf = {
 };
 
 inline std::mutex coutm;
+inline std::mutex supersecure;
+inline std::queue<std::string> vqueue;
+inline std::condition_variable vqueuecheck;
 struct Sensor;
 struct LJSensors;
 struct SocketConn;

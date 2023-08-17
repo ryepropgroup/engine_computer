@@ -206,9 +206,9 @@ void mach::SocketConn::input() {
   if (std::getline(std::istream(&_buf), val)) {
     std::lock_guard<std::mutex> l(coutm);
     //        std::cout << val << std::endl;
-    qioc.post([this, val](){
-      mach::dispatchValve(val, labjack);
-    });
+    std::lock_guard<std::mutex> v(supersecure);
+    vqueue.push(val);
+    vqueuecheck.notify_one();
   }
 }
 
