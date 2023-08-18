@@ -21,22 +21,10 @@ const std::array<int, 7> scanList{14, 28, 4, 8, 12, 22, 6};
 auto scanListC = scanList.data();
 double *scanRate = new double{10};
 std::mutex writem;
-std::mutex supersecure;
-std::string valstr;
 std::condition_variable suspend_write;
-std::condition_variable vqueuecheck;
 std::atomic<bool> enabled = true;
 std::vector<std::jthread> threads{};
 
-void valveActFunc(int hondle){
-  while(!token.stop_requested()){
-    std::unique_lock<std::mutex> lock(supersecure);
-    vqueuecheck.wait(lock, []{return (valstr.length() > 0);});
-    mach::dispatchValve(valstr, hondle);
-    valstr = "";
-    lock.unlock();
-  }
-}
 void handlesigint(const int signal_num) {
   test.request_stop();
   std::cout<<"Killing Threads"<<std::endl;
@@ -133,7 +121,6 @@ int main() {
   mach::Server s(ioContext, test, sharedState, handle);
   threads.emplace_back([&ioContext] { ioContext.run(); });
   threads.emplace_back(run_signal, sharedState);
-  threads.emplace_back(valveActFunc, handle);
     err = LJM_eWriteName(handle, "STREAM_TRIGGER_INDEX", 0);
     err = LJM_eWriteName(handle, "AIN0_RESOLUTION_INDEX", 0);
     err = LJM_eWriteName(handle, "AIN0_RANGE", 0.1);

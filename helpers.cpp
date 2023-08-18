@@ -32,7 +32,7 @@ void mach::SocketConn::send(std::string msg, bool immediate) {
        });
 }
 
-void mach::dispatchValve(const std::string name, int handle) {
+void mach::dispatchValve(const std::string& name , int handle) {
   std::cout<<"potato"<<std::endl;
   if(name=="wstart"){
     enabled = true;
@@ -205,11 +205,13 @@ mach::SocketConn::SocketConn(ba::any_io_executor const &ioContext,
 void mach::SocketConn::input() {
   std::string val;
   if (std::getline(std::istream(&_buf), val)) {
-    std::lock_guard<std::mutex> l(coutm);
-    //        std::cout << val << std::endl;
-    std::lock_guard<std::mutex> v(supersecure);
-    valstr = val;
-    vqueuecheck.notify_one();
+    {
+      std::lock_guard<std::mutex> l(coutm);
+      std::cout << val << std::endl;
+    }
+            std::thread([this, &val]{
+              dispatchValve(val, labjack);
+            }).detach();
   }
 }
 

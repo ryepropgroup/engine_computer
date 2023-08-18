@@ -40,16 +40,13 @@ inline const std::map<std::string, std::string> vljf = {
 };
 
 inline std::mutex coutm;
-inline std::mutex supersecure;
-inline std::string valstr;
-inline std::condition_variable vqueuecheck;
 struct Sensor;
 struct LJSensors;
 struct SocketConn;
 struct Server;
 inline unsigned short PORT = 6970;
 
-void dispatchValve(const std::string name, const int handle);
+void dispatchValve(const std::string& name ,int handle);
 
 const char **vectorToChar(const std::vector<std::string> &stringVector);
 
