@@ -209,9 +209,7 @@ void mach::SocketConn::input() {
       std::lock_guard<std::mutex> l(coutm);
       std::cout << val << std::endl;
     }
-            std::thread([this, &val]{
-              dispatchValve(val, labjack);
-            }).detach();
+    std::async(std::launch::async, [val, this]{dispatchValve(val, labjack);});
   }
 }
 
