@@ -14,6 +14,13 @@ namespace ba = boost::asio;
 namespace bs = boost::signals2;
 using json = nlohmann::json;
 using namespace std::chrono_literals;
+
+extern std::mutex sigm;
+extern std::condition_variable sigcondition;
+extern std::string vData;
+extern std::atomic<bool> isString;
+extern std::atomic<bool> enabled;
+extern std::condition_variable suspend_write;
 namespace mach {
 using Timestamp = uint64_t;
 mach::Timestamp now();
@@ -46,7 +53,7 @@ struct SocketConn;
 struct Server;
 inline unsigned short PORT = 6970;
 
-void dispatchValve(const std::string& name ,int handle);
+void dispatchValve(const std::string &name, int handle);
 
 const char **vectorToChar(const std::vector<std::string> &stringVector);
 
@@ -64,22 +71,33 @@ struct Sensor {
   std::vector<std::string> params;
   std::vector<double> settings;
 };
-
+/*
+ * p31 -> AIN 0
+ * p20 -> AIN 1
+ * p21 -> AIN 2
+ * p32 -> AIN 3
+ * p10 -> AIN 4
+ * p30 -> AIN 5
+ * TC 1 -> AIN 7
+ * TC 2 -> AIN 9
+ * p22 -> AIN 11
+ */
 struct LJSensors {
-  double p10val = 0, p21val = 0, p31val = 0, t2val = 0, p22val = 0, p32val = 0;
+  double p10val = 0, p21val = 0, p31val = 0, t1val = 0, t2val = 0, p22val = 0,
+         p32val = 0, p20val = 0, p30val = 0;
   // TODO: swap to proper AINs to change
   mach::Sensor *p31 = // p31
-      new Sensor(std::string("AIN2"),
-                 std::vector<std::string>{"AIN2_range", /*"AIN2_NEGATIVE_CH"*/},
+      new Sensor(std::string("AIN0"),
+                 std::vector<std::string>{"AIN0_range", /*"AIN0_NEGATIVE_CH"*/},
                  std::vector<double>{10 /*, 1.0*/});
   mach::Sensor *p21 = // p21
-      new Sensor(std::string("AIN4"),
-                 std::vector<std::string>{"AIN4_range", /*"AIN4_NEGATIVE_CH"*/},
+      new Sensor(std::string("AIN2"),
+                 std::vector<std::string>{"AIN2_range", /*"AIN4_NEGATIVE_CH"*/},
                  std::vector<double>{10 /*, 3.0*/});
   mach::Sensor *p10 = // p10
       new Sensor(
-          std::string("AIN6"),
-          std::vector<std::string>{"AIN6_range" /*, "AIN6_NEGATIVE_CH"*/},
+          std::string("AIN4"),
+          std::vector<std::string>{"AIN4_range" /*, "AIN4_NEGATIVE_CH"*/},
           std::vector<double>{10 /*, 5.0*/});
   mach::Sensor *p22 = // p22
       new Sensor(std::string("AIN11"), std::vector<std::string>{"AIN11_range"},
@@ -87,19 +105,24 @@ struct LJSensors {
   mach::Sensor *p32 = // p32
       new Sensor(std::string("AIN3"), std::vector<std::string>{"AIN3_range"},
                  std::vector<double>{10});
-  // mach::Sensor *t2 =
-  //     new Sensor(std::string("AIN0_EF_READ_A"),
-  //                std::vector<std::string>{
-  //                    "AIN0_EF_INDEX", "AIN0_EF_CONFIG_B", "AIN0_EF_CONFIG_D",
-  //                    "AIN0_EF_CONFIG_E", "AIN0_EF_CONFIG_A",
-  //                    "AIN0_NEGATIVE_CH"},
-  //                std::vector<double>{22, 60052, 1.0, 0.0, 1, 1});
+  mach::Sensor *p20 = // p20
+      new Sensor(std::string("AIN1"), std::vector<std::string>{"AIN1_range"},
+                 std::vector<double>{10});
+  mach::Sensor *p30 = // p30
+      new Sensor(std::string("AIN5"), std::vector<std::string>{"AIN5_range"},
+                 std::vector<double>{10});
+  mach::Sensor *t1 = new Sensor(
+      std::string("AIN7_EF_READ_A"),
+      std::vector<std::string>{"AIN7_EF_INDEX", "AIN7_EF_CONFIG_B",
+                               "AIN7_EF_CONFIG_D", "AIN7_EF_CONFIG_E",
+                               "AIN7_EF_CONFIG_A", "AIN7_NEGATIVE_CH"},
+      std::vector<double>{22, 60052, 1.0, 0.0, 1, 1});
 
-  mach::Sensor *t3 =
-      new Sensor(std::string("AIN6_EF_READ_A"),
+  mach::Sensor *t2 =
+      new Sensor(std::string("AIN9_EF_READ_A"),
                  std::vector<std::string>{
-                     "AIN6_EF_INDEX", "AIN6_EF_CONFIG_B", "AIN6_EF_CONFIG_D",
-                     "AIN6_EF_CONFIG_E", "AIN6_EF_CONFIG_A"},
+                     "AIN9_EF_INDEX", "AIN9_EF_CONFIG_B", "AIN9_EF_CONFIG_D",
+                     "AIN9_EF_CONFIG_E", "AIN9_EF_CONFIG_A"},
                  std::vector<double>{22, 60052, 1.0, 0.0, 1});
 };
 
@@ -134,8 +157,10 @@ public:
     std::shared_lock guard(slock);
     std::vector<std::string> db = {
         std::to_string(int(lj.p10val)), std::to_string(int(lj.p21val)),
-        std::to_string(int(lj.p31val)), std::to_string(int(lj.t2val)),
-        std::to_string(int(lj.t2val))};
+        std::to_string(int(lj.p31val)), std::to_string(int(lj.t1val)),
+        std::to_string(int(lj.t2val)),  std::to_string(int(lj.p20val)),
+        std::to_string(int(lj.p30val)), std::to_string(int(lj.p22val)),
+        std::to_string(int(lj.p32val))};
     for (auto &d : db) {
       while (d.length() < 4) {
         d = "0" + d;
@@ -143,11 +168,16 @@ public:
     }
     json jsonState;
     jsonState["launched"] = launched;
+    jsonState["writing"] = bool(enabled);
     jsonState["lj"]["p10val"] = db[0];
     jsonState["lj"]["p21val"] = db[1];
     jsonState["lj"]["p31val"] = db[2];
-    jsonState["lj"]["t2val"] = db[3];
-    jsonState["lj"]["t3val"] = db[4];
+    jsonState["lj"]["t1val"] = db[3];
+    jsonState["lj"]["t2val"] = db[4];
+    jsonState["lj"]["p20val"] = db[5];
+    jsonState["lj"]["p30val"] = db[6];
+    jsonState["lj"]["p22val"] = db[7];
+    jsonState["lj"]["p32val"] = db[8];
     jsonState["valves"] = valves;
     return jsonState;
   }
@@ -201,7 +231,7 @@ private:
   void _write();
 
   friend struct Server;
-  ba::io_context& qioc;
+  ba::io_context &qioc;
   boost::asio::streambuf _buf;
   std::list<std::string> _mlist;
   ba::ip::tcp::socket _s;
