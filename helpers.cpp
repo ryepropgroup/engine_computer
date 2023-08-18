@@ -3,8 +3,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-extern std::atomic<bool> enabled;
-extern std::condition_variable suspend_write;
 mach::Timestamp mach::now() {
   return mach::Timestamp(
       std::chrono::duration_cast<std::chrono::nanoseconds>(
@@ -209,7 +207,13 @@ void mach::SocketConn::input() {
       std::lock_guard<std::mutex> l(coutm);
       std::cout << val << std::endl;
     }
-    std::async(std::launch::async, [val, this]{dispatchValve(val, labjack);});
+    {
+      std::lock_guard<std::mutex> lock(sigm);
+      vData = val;
+      isString = true;
+    }
+    sigcondition.notify_all();
+
   }
 }
 

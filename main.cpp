@@ -10,7 +10,7 @@
 
 using namespace std::chrono_literals;
 namespace ba = boost::asio;
-
+boost::signals2::signal<void(std::string)> socketSignal;
 std::stop_source test;
 std::stop_token token = test.get_token();
 int handle;
@@ -23,8 +23,20 @@ double *scanRate = new double{10};
 std::mutex writem;
 std::condition_variable suspend_write;
 std::atomic<bool> enabled = true;
+std::mutex sigm;
+std::condition_variable sigcondition;
+std::atomic<bool> isString = false;
 std::vector<std::jthread> threads{};
+std::string vData;
 
+void waitPause(int labjack){
+  while(true){
+    std::unique_lock<std::mutex> ulock(sigm);
+    sigcondition.wait(ulock, []{return bool(isString);});
+    mach::dispatchValve(data, labjack);
+    isString = false;
+  }
+}
 void handlesigint(const int signal_num) {
   test.request_stop();
   std::cout<<"Killing Threads"<<std::endl;

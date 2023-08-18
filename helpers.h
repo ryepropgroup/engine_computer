@@ -39,6 +39,12 @@ inline const std::map<std::string, std::string> vljf = {
     {"DIO15", "V22_NO"},
 };
 
+extern std::mutex sigm;
+extern std::condition_variable sigcondition;
+extern std::string vData;
+std::atomic<bool> isString;
+extern std::atomic<bool> enabled;
+extern std::condition_variable suspend_write;
 inline std::mutex coutm;
 struct Sensor;
 struct LJSensors;
