@@ -33,10 +33,11 @@ void waitPause(int labjack){
   while(true){
     std::unique_lock<std::mutex> ulock(sigm);
     sigcondition.wait(ulock, []{return bool(isString);});
-    mach::dispatchValve(data, labjack);
+    mach::dispatchValve(vData, labjack);
     isString = false;
   }
 }
+
 void handlesigint(const int signal_num) {
   test.request_stop();
   std::cout<<"Killing Threads"<<std::endl;

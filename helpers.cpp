@@ -3,6 +3,12 @@
 #include <memory>
 #include <string>
 #include <vector>
+extern std::mutex sigm;
+extern std::condition_variable sigcondition;
+extern std::string vData;
+extern std::atomic<bool> isString;
+extern std::atomic<bool> enabled;
+extern std::condition_variable suspend_write;
 mach::Timestamp mach::now() {
   return mach::Timestamp(
       std::chrono::duration_cast<std::chrono::nanoseconds>(
