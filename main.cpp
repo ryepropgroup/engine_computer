@@ -7,6 +7,7 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
+#include <thread>
 
 using namespace std::chrono_literals;
 namespace ba = boost::asio;
@@ -15,7 +16,7 @@ std::stop_source test;
 std::stop_token token = test.get_token();
 int handle;
 int spr{1};
-int numaddr{11};
+int numaddr{10};
 // AIN7, AIN9, AIN14, AIN0, AIN1, AIN2, AIN3, AIN4, AIN5, AIN11
 const std::array<int, 10> scanList{14, 18, 28, 0, 2, 4, 6, 8, 10, 22};
 auto scanListC = scanList.data();
@@ -86,6 +87,7 @@ void run_signal(const std::shared_ptr<mach::State> st) {
        << "\n";
 
   while (!token.stop_requested()) {
+    std::this_thread::sleep_for(69ms);
     std::unique_lock<std::mutex> lock(writem);
     suspend_write.wait(lock, [] { return bool(enabled); });
     mach::Timestamp now = mach::now();
@@ -143,15 +145,15 @@ int main() {
                           mach::vectorToDouble(sharedState->lj.p32->settings),
                           &errorAddress);
     ErrorCheck(err, "LJM_eWriteNames");
-     err = LJM_eWriteNames(handle, int(sharedState->lj.t1->params.size()),
-     mach::vectorToChar(sharedState->lj.t1->params),
-     mach::vectorToDouble(sharedState->lj.t1->settings), &errorAddress);
-     ErrorCheck(err, "LJM_eWriteNames");
-    err = LJM_eWriteNames(handle, int(sharedState->lj.t2->params.size()),
-                          mach::vectorToChar(sharedState->lj.t2->params),
-                          mach::vectorToDouble(sharedState->lj.t2->settings),
-                          &errorAddress);
-    ErrorCheck(err, "LJM_eWriteNames");
+    //  err = LJM_eWriteNames(handle, int(sharedState->lj.t1->params.size()),
+    //  mach::vectorToChar(sharedState->lj.t1->params),
+    //  mach::vectorToDouble(sharedState->lj.t1->settings), &errorAddress);
+    //  ErrorCheck(err, "LJM_eWriteNames");
+    // err = LJM_eWriteNames(handle, int(sharedState->lj.t2->params.size()),
+    //                       mach::vectorToChar(sharedState->lj.t2->params),
+    //                       mach::vectorToDouble(sharedState->lj.t2->settings),
+    //                       &errorAddress);
+    // ErrorCheck(err, "LJM_eWriteNames");
   } catch (...) {
     std::cout << "LABJACK ISSUE" << std::endl;
   }
@@ -160,8 +162,10 @@ int main() {
   threads.emplace_back(run_signal, sharedState);
   threads.emplace_back(waitPause, handle);
   err = LJM_eWriteName(handle, "STREAM_TRIGGER_INDEX", 0);
-  err = LJM_eWriteName(handle, "AIN0_RESOLUTION_INDEX", 0);
-  err = LJM_eWriteName(handle, "AIN0_RANGE", 0.1);
+  err = LJM_eWriteName(handle, "AIN7_RESOLUTION_INDEX", 0);
+  err = LJM_eWriteName(handle, "AIN7_RANGE", 0.1);
+  err = LJM_eWriteName(handle, "AIN9_RESOLUTION_INDEX", 0);
+  err = LJM_eWriteName(handle, "AIN9_RANGE", 0.1);
   err = LJM_eStreamStart(handle, spr, numaddr, scanListC, scanRate);
   ErrorCheck(err, "LJM_eStreamStart");
   while (!token.stop_requested()) {
@@ -192,8 +196,8 @@ int main() {
     err = LJM_TCVoltsToTemp(6004, aData[0], dTempK, &t1K);
     err = LJM_TCVoltsToTemp(6004, aData[1], dTempK, &t2K);
     ErrorCheck(err, "LJM_TCVoltsToTemp");
-    sharedState->lj.t1val = (t1K);
-    sharedState->lj.t2val = (t2K);
+    sharedState->lj.t1val = (t1K -273);
+    sharedState->lj.t2val = (t2K -273);
     sharedState->lj.p31val = (aData[3] * 300);
     sharedState->lj.p20val = (aData[4] * 300);
     sharedState->lj.p21val = (aData[5] * 300);
