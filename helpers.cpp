@@ -218,7 +218,7 @@ void mach::SocketConn::start() { _read(); }
 
 mach::SocketConn::SocketConn(ba::any_io_executor const &ioContext,
                              std::stop_source &stopSource, const int &lj)
-    : _s(ioContext), _ss(stopSource), labjack(lj), qioc((ba::io_context &)ioContext){};
+    : _s(ioContext), _ss(stopSource), labjack(lj){};
 
 void mach::SocketConn::input() {
   std::string val;
@@ -228,11 +228,14 @@ void mach::SocketConn::input() {
       std::cout << val << std::endl;
     }
     {
-      std::lock_guard<std::mutex> lock(sigm);
-      vData = val;
-      isString = true;
+      ba::post(_s.get_executor(), [this, val](){
+        dispatchValve(val, labjack);
+      });
+//      std::lock_guard<std::mutex> lock(sigm);
+//      vData = val;
+//      isString = true;
     }
-    sigcondition.notify_all();
+//    sigcondition.notify_all();
 
   }
 }
