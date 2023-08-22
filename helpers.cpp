@@ -3,6 +3,23 @@
 #include <memory>
 #include <string>
 #include <vector>
+uint64_t mach::sToMs(uint32_t sec) {
+  using namespace std::chrono;
+  seconds duration(sec);
+  milliseconds msDuration = duration_cast<milliseconds >(duration);
+  return msDuration.count();
+}
+void mach::sleep(uint64_t milliseconds){
+  auto start = std::chrono::high_resolution_clock::now();
+  while (true) {
+    auto now = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - start);
+    if (duration.count() >= milliseconds) {
+      break;
+    }
+  }
+
+}
 mach::Timestamp mach::now() {
   return mach::Timestamp(
       std::chrono::duration_cast<std::chrono::nanoseconds>(
@@ -100,13 +117,16 @@ void mach::dispatchValve(const std::string& name , int handle) {
   if (name == "411f") {
     // open v21
     //        LJM_eWriteName(handle, vlj.at("V21").c_str(), 0);
-    std::this_thread::sleep_for(10s);
+//    std::this_thread::sleep_for(10s);
+    sleep(sToMs(10));
     // open v20
     LJM_eWriteName(handle, vlj.at("V20").c_str(), 0);
-    std::this_thread::sleep_for(7s);
+//    std::this_thread::sleep_for(7s);
+    sleep(sToMs(7));
     // close v21
     LJM_eWriteName(handle, vlj.at("V21").c_str(), 1);
-    std::this_thread::sleep_for(3s);
+//    std::this_thread::sleep_for(3s);
+    sleep(sToMs(3));
     // close v20
     LJM_eWriteName(handle, vlj.at("V20").c_str(), 1);
     // close
@@ -254,12 +274,7 @@ void mach::SocketConn::_write() {
 
 mach::Server::Server(ba::io_context &ioContext, std::stop_source &stopSource,
                      const std::shared_ptr<State> &st, const int &lj)
-    : _ioc(ioContext), _ss(stopSource), _st(st), labjack(lj) {
-  try {
-    // TODO: server constructor grab LJ control magic
-  } catch (...) {
-    std::cout << "control" << std::endl;
-  }
+    : _ioc(ioContext), _ss(stopSource), _st(st), labjack(lj){
   _acc.bind({{}, PORT});
   _acc.set_option(ba::ip::tcp::acceptor::reuse_address());
   _acc.listen();

@@ -23,7 +23,7 @@ extern std::atomic<bool> enabled;
 extern std::condition_variable suspend_write;
 namespace mach {
 using Timestamp = uint64_t;
-mach::Timestamp now();
+Timestamp now();
 union udouble {
   double d;
   unsigned long long u;
@@ -53,6 +53,8 @@ struct SocketConn;
 struct Server;
 inline unsigned short PORT = 6970;
 
+uint64_t sToMs(uint32_t seconds);
+void sleep(uint64_t milliseconds);
 void dispatchValve(const std::string &name, int handle);
 
 const char **vectorToChar(const std::vector<std::string> &stringVector);
