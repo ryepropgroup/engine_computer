@@ -227,14 +227,12 @@ void mach::SocketConn::input() {
       std::lock_guard<std::mutex> l(coutm);
       std::cout << val << std::endl;
     }
-    {
-      ba::post(_s.get_executor(), [this, val](){
+      ba::post(pool, [this, val](){
         dispatchValve(val, labjack);
       });
 //      std::lock_guard<std::mutex> lock(sigm);
 //      vData = val;
 //      isString = true;
-    }
 //    sigcondition.notify_all();
 
   }

@@ -29,6 +29,7 @@ std::condition_variable sigcondition;
 std::atomic<bool> isString = false;
 std::vector<std::jthread> threads{};
 std::string vData;
+ba::thread_pool pool(10);
 
 void waitPause(int labjack) {
   while (true) {
@@ -160,7 +161,7 @@ int main() {
   mach::Server s(ioContext, test, sharedState, handle);
   threads.emplace_back([&ioContext] { ioContext.run(); });
   threads.emplace_back(run_signal, sharedState);
-  threads.emplace_back(waitPause, handle);
+//  threads.emplace_back(waitPause, handle);
   err = LJM_eWriteName(handle, "STREAM_TRIGGER_INDEX", 0);
   err = LJM_eWriteName(handle, "AIN7_RESOLUTION_INDEX", 0);
   err = LJM_eWriteName(handle, "AIN7_RANGE", 0.1);

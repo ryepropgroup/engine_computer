@@ -16,6 +16,7 @@ using json = nlohmann::json;
 using namespace std::chrono_literals;
 
 extern std::mutex sigm;
+extern ba::thread_pool pool;
 extern std::condition_variable sigcondition;
 extern std::string vData;
 extern std::atomic<bool> isString;
