@@ -227,6 +227,9 @@ void mach::SocketConn::input() {
       std::lock_guard<std::mutex> l(coutm);
       std::cout << val << std::endl;
     }
+    if (val == "kill"){
+      pool.stop();
+    }
       ba::post(pool, [this, val](){
         dispatchValve(val, labjack);
       });
