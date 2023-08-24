@@ -228,7 +228,9 @@ void mach::SocketConn::input() {
       std::cout << val << std::endl;
     }
     if (val == "kill"){
+      auto test = pool.get_executor();
       pool.stop();
+      pool.join();
       return;
     }
       ba::post(pool, [this, val](){
