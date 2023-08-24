@@ -229,6 +229,7 @@ void mach::SocketConn::input() {
     }
     if (val == "kill"){
       pool.stop();
+      return;
     }
       ba::post(pool, [this, val](){
         dispatchValve(val, labjack);
