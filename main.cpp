@@ -29,7 +29,7 @@ std::condition_variable sigcondition;
 std::atomic<bool> isString = false;
 std::vector<std::jthread> threads{};
 std::string vData;
-ba::thread_pool pool(10);
+ba::thread_pool pool(50);
 
 void waitPause(int labjack) {
   while (true) {
@@ -194,9 +194,9 @@ int main() {
     err = LJM_eStreamRead(handle, aData, &devicebacklog, &ljmbacklog);
     ErrorCheck(err, "LJM_eStreamRead");
     double dTempK = (aData[2] * -92.6 + 467.6);
+    double dTempKTwo = (aData[2] * -92.6 + 467.6);
     err = LJM_TCVoltsToTemp(6004, aData[0], dTempK, &t1K);
-    err = LJM_TCVoltsToTemp(6004, aData[1], dTempK, &t2K);
-    ErrorCheck(err, "LJM_TCVoltsToTemp");
+    err = LJM_TCVoltsToTemp(6004, aData[1], dTempKTwo, &t2K);
     sharedState->lj.t1val = (t1K -273);
     sharedState->lj.t2val = (t2K -273);
     sharedState->lj.p31val = (aData[3] * 300);
