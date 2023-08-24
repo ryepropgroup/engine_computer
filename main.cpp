@@ -139,9 +139,9 @@ int main() {
   ba::io_context ioContext;
   int err, errorAddress = INITIAL_ERR_ADDRESS;
   try {
-    err = LJM_Open(LJM_dtANY, LJM_ctANY, "FastJack", &SlowJack);
+    err = LJM_Open(LJM_dtANY, LJM_ctANY, "SlowJack", &SlowJack);
     ErrorCheck(err, "LJM_Open");
-    err = LJM_Open(LJM_dtANY, LJM_ctANY, "SlowJack", &FastJack);
+    err = LJM_Open(LJM_dtANY, LJM_ctANY, "FastJack", &FastJack);
     ErrorCheck(err, "LJM_Open");
     err = LJM_eWriteNames(SlowJack, int(sharedState->lj.p10->params.size()),
                           mach::vectorToChar(sharedState->lj.p10->params),
