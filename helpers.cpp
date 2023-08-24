@@ -116,7 +116,7 @@ void mach::dispatchValve(const std::string& name , int handle) {
    */
   if (name == "411f") {
     // open v21
-    //        LJM_eWriteName(handle, vlj.at("V21").c_str(), 0);
+    //        LJM_eWriteName(SlowJack, vlj.at("V21").c_str(), 0);
 //    std::this_thread::sleep_for(10s);
     sleep(sToMs(10));
     // open v20

@@ -75,32 +75,43 @@ struct Sensor {
   std::vector<double> settings;
 };
 /*
+ * labjack 1
  * p31 -> AIN 0
- * p20 -> AIN 1
  * p21 -> AIN 2
  * p32 -> AIN 3
  * p10 -> AIN 4
- * p30 -> AIN 5
  * TC 1 -> AIN 7
  * TC 2 -> AIN 9
  * p22 -> AIN 11
+ *
+ * labjack 2
+ * p20 -> AIN 1
+ * p30 -> AIN 7
+ * pINJ -> AIN 0
+ * lc -> AIN 2
+ * inj1 -> AIN 5
+ * inj2 -> AIN 6
+ * ign -> AIN 4
+ *
  */
 struct LJSensors {
-  double p10val = 0, p21val = 0, p31val = 0, t1val = 0, t2val = 0, p22val = 0,
-         p32val = 0, p20val = 0, p30val = 0;
+  double p10val = 0, p21val = 0, p31val = 0, p22val = 0, p32val = 0, p20val = 0,
+         p30val = 0, pinjval = 0, lcellval = 0, t1val = 0, t2val = 0,
+         inj1val = 0, inj2val = 0, ignval = 0;
+
   // TODO: swap to proper AINs to change
   mach::Sensor *p31 = // p31
       new Sensor(std::string("AIN0"),
-                 std::vector<std::string>{"AIN0_range", /*"AIN0_NEGATIVE_CH"*/},
+                 std::vector<std::string>{"AIN0_RANGE", /*"AIN0_NEGATIVE_CH"*/},
                  std::vector<double>{10 /*, 1.0*/});
   mach::Sensor *p21 = // p21
       new Sensor(std::string("AIN2"),
-                 std::vector<std::string>{"AIN2_range", /*"AIN4_NEGATIVE_CH"*/},
+                 std::vector<std::string>{"AIN2_RANGE", /*"AIN4_NEGATIVE_CH"*/},
                  std::vector<double>{10 /*, 3.0*/});
   mach::Sensor *p10 = // p10
       new Sensor(
           std::string("AIN4"),
-          std::vector<std::string>{"AIN4_range" /*, "AIN4_NEGATIVE_CH"*/},
+          std::vector<std::string>{"AIN4_RANGE" /*, "AIN4_NEGATIVE_CH"*/},
           std::vector<double>{10 /*, 5.0*/});
   mach::Sensor *p22 = // p22
       new Sensor(std::string("AIN11"), std::vector<std::string>{"AIN11_range"},
@@ -108,25 +119,40 @@ struct LJSensors {
   mach::Sensor *p32 = // p32
       new Sensor(std::string("AIN3"), std::vector<std::string>{"AIN3_range"},
                  std::vector<double>{10});
-  mach::Sensor *p20 = // p20
-      new Sensor(std::string("AIN1"), std::vector<std::string>{"AIN1_range"},
-                 std::vector<double>{10});
-  mach::Sensor *p30 = // p30
-      new Sensor(std::string("AIN5"), std::vector<std::string>{"AIN5_range"},
-                 std::vector<double>{10});
   mach::Sensor *t1 = new Sensor(
-      std::string("AIN7_EF_READ_A"),
+      std::string("AIN7"),
       std::vector<std::string>{"AIN7_EF_INDEX", "AIN7_EF_CONFIG_B",
                                "AIN7_EF_CONFIG_D", "AIN7_EF_CONFIG_E",
                                "AIN7_EF_CONFIG_A", "AIN7_NEGATIVE_CH"},
       std::vector<double>{22, 60052, 1.0, 0.0, 1, 1});
 
   mach::Sensor *t2 =
-      new Sensor(std::string("AIN9_EF_READ_A"),
+      new Sensor(std::string("AIN9"),
                  std::vector<std::string>{
                      "AIN9_EF_INDEX", "AIN9_EF_CONFIG_B", "AIN9_EF_CONFIG_D",
                      "AIN9_EF_CONFIG_E", "AIN9_EF_CONFIG_A"},
                  std::vector<double>{22, 60052, 1.0, 0.0, 1});
+  mach::Sensor *pinj =
+      new Sensor(std::string("AIN0"), std::vector<std::string>{"AIN0_RANGE"},
+                 std::vector<double>{10});
+  mach::Sensor *lc = new Sensor(std::string("AIN2"),
+                                std::vector<std::string>{"AIN2_NEGATIVE_CH"},
+                                std::vector<double>{3});
+  mach::Sensor *inj1 =
+      new Sensor(std::string("AIN5"), std::vector<std::string>{"AIN5_RANGE"},
+                 std::vector<double>{0.1});
+  mach::Sensor *inj2 =
+      new Sensor(std::string("AIN6"), std::vector<std::string>{"AIN6_RANGE"},
+                 std::vector<double>{0.1});
+  mach::Sensor *ign =
+      new Sensor(std::string("AIN4"), std::vector<std::string>{"AIN4_RANGE"},
+                 std::vector<double>{0.1});
+  mach::Sensor *p20 = // p20
+      new Sensor(std::string("AIN1"), std::vector<std::string>{"AIN1_RANGE"},
+                 std::vector<double>{10});
+  mach::Sensor *p30 = // p30
+      new Sensor(std::string("AIN7"), std::vector<std::string>{"AIN7_RANGE"},
+                 std::vector<double>{10});
 };
 
 struct State {
@@ -159,11 +185,14 @@ public:
   [[nodiscard]] json toJSON() const {
     std::shared_lock guard(slock);
     std::vector<std::string> db = {
-        std::to_string(int(lj.p10val)), std::to_string(int(lj.p21val)),
-        std::to_string(int(lj.p31val)), std::to_string(int(lj.t1val)),
-        std::to_string(int(lj.t2val)),  std::to_string(int(lj.p20val)),
-        std::to_string(int(lj.p30val)), std::to_string(int(lj.p22val)),
-        std::to_string(int(lj.p32val))};
+        std::to_string(int(lj.p10val)),   std::to_string(int(lj.p21val)),
+        std::to_string(int(lj.p31val)),   std::to_string(int(lj.t1val)),
+        std::to_string(int(lj.t2val)),    std::to_string(int(lj.p20val)),
+        std::to_string(int(lj.p30val)),   std::to_string(int(lj.p22val)),
+        std::to_string(int(lj.p32val)),   std::to_string(int(lj.pinjval)),
+        std::to_string(int(lj.lcellval)), std::to_string(int(lj.inj1val)),
+        std::to_string(int(lj.inj2val)),  std::to_string(int(lj.ignval)),
+    };
     for (auto &d : db) {
       while (d.length() < 4) {
         d = "0" + d;
@@ -181,6 +210,11 @@ public:
     jsonState["lj"]["p30val"] = db[6];
     jsonState["lj"]["p22val"] = db[7];
     jsonState["lj"]["p32val"] = db[8];
+    jsonState["lj"]["pinjval"] = db[9];
+    jsonState["lj"]["lcval"] = db[10];
+    jsonState["lj"]["inj1val"] = db[11];
+    jsonState["lj"]["inj2val"] = db[12];
+    jsonState["lj"]["ignval"] = db[13];
     jsonState["valves"] = valves;
     return jsonState;
   }
@@ -206,13 +240,6 @@ public:
   }
 };
 
-//    std::string valveFuncNO(const int num, const std::string &status,
-//                            const std::string &valve,
-//                            const std::shared_ptr<State> &state);
-
-//    std::string valveFunc(const int num, const std::string &status,
-//                          const std::string &valve,
-//                          const std::shared_ptr<State> &state);
 struct SocketConn : std::enable_shared_from_this<SocketConn> {
   explicit SocketConn(ba::any_io_executor const &ioContext,
                       std::stop_source &stopSource, const int &lj);

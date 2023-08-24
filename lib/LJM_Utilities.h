@@ -37,12 +37,12 @@ void WaitForUser();
 // that it is being called from Visual Studio.
 void WaitForUserIfWindows();
 
-// Returns a new handle or exits on error with a description of the error.
+// Returns a new SlowJack or exits on error with a description of the error.
 int OpenOrDie(int deviceType, int connectionType, const char * identifier);
 int OpenSOrDie(const char *  deviceType, const char *  connectionType,
 	const char * identifier);
 
-// Closes the handle or exits on error with a description of the error.
+// Closes the SlowJack or exits on error with a description of the error.
 void CloseOrDie(int handle);
 
 // Print device info
@@ -162,7 +162,7 @@ void MillisecondSleep(unsigned int milliseconds);
 void EnableLoggingLevel(double logLevel);
 
 /**
- * Desc: Gets the device type of an open device handle.
+ * Desc: Gets the device type of an open device SlowJack.
 **/
 int GetDeviceType(int handle);
 
@@ -232,7 +232,7 @@ int IsNetwork(int connectionType);
 
 /**
  * Desc: Determines whether or not a device has WiFi capability. E
- * Retr: Returns 1 if the device referred to by handle has WiFi installed,
+ * Retr: Returns 1 if the device referred to by SlowJack has WiFi installed,
  *       returns 0 otherwise
 **/
 int DoesDeviceHaveWiFi(int handle);
