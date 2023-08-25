@@ -16,7 +16,7 @@ std::stop_source test;
 std::stop_token token = test.get_token();
 int SlowJack, FastJack;
 int spr{1};
-int numSlowJack{10}, numFastJack{10};
+int numSlowJack{10}, numFastJack{8};
 // AIN7, AIN9, AIN14, AIN0, AIN1, AIN2, AIN3, AIN4, AIN5, AIN11
 const std::array<int, 10> slowScanList{14, 18, 28, 0, 2, 4, 6, 8, 10, 22};
 // AIN 1, 7, 0, 2, 5, 6, 4, 14
@@ -168,16 +168,16 @@ int main() {
                           mach::vectorToDouble(sharedState->lj.p32->settings),
                           &errorAddress);
     ErrorCheck(err, "LJM_eWriteNames");
-    err = LJM_eWriteNames(SlowJack, int(sharedState->lj.t1->params.size()),
-                          mach::vectorToChar(sharedState->lj.t1->params),
-                          mach::vectorToDouble(sharedState->lj.t1->settings),
-                          &errorAddress);
-    ErrorCheck(err, "LJM_eWriteNames");
-    err = LJM_eWriteNames(SlowJack, int(sharedState->lj.t2->params.size()),
-                          mach::vectorToChar(sharedState->lj.t2->params),
-                          mach::vectorToDouble(sharedState->lj.t2->settings),
-                          &errorAddress);
-    ErrorCheck(err, "LJM_eWriteNames");
+    // err = LJM_eWriteNames(SlowJack, int(sharedState->lj.t1->params.size()),
+    //                       mach::vectorToChar(sharedState->lj.t1->params),
+    //                       mach::vectorToDouble(sharedState->lj.t1->settings),
+    //                       &errorAddress);
+    // ErrorCheck(err, "LJM_eWriteNames");
+    // err = LJM_eWriteNames(SlowJack, int(sharedState->lj.t2->params.size()),
+    //                       mach::vectorToChar(sharedState->lj.t2->params),
+    //                       mach::vectorToDouble(sharedState->lj.t2->settings),
+    //                       &errorAddress);
+    // ErrorCheck(err, "LJM_eWriteNames");
     err = LJM_eWriteNames(FastJack, int(sharedState->lj.p20->params.size()),
                           mach::vectorToChar(sharedState->lj.p20->params),
                           mach::vectorToDouble(sharedState->lj.p20->settings),
@@ -227,8 +227,9 @@ int main() {
   err = LJM_eWriteName(SlowJack, "AIN9_RESOLUTION_INDEX", 0);
   err = LJM_eWriteName(SlowJack, "AIN9_RANGE", 0.1);
   err = LJM_eStreamStart(SlowJack, spr, numSlowJack, scanListC, scanRate);
-  err = LJM_eStreamStart(FastJack, spr, numFastJack, scanListCFast, scanRateFast);
   ErrorCheck(err, "LJM_eStreamStart");
+  err = LJM_eStreamStart(FastJack, spr, numFastJack, scanListCFast, scanRateFast);
+  std::cout<<"my list"<<std::endl;
   ErrorCheck(err, "LJM_eStreamStart");
   while (!token.stop_requested()) {
     int devicebacklog;

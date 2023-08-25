@@ -137,7 +137,7 @@ struct LJSensors {
                  std::vector<double>{10});
   mach::Sensor *lc = new Sensor(std::string("AIN2"),
                                 std::vector<std::string>{"AIN2_NEGATIVE_CH"},
-                                std::vector<double>{3});
+                                std::vector<double>{3.0});
   mach::Sensor *inj1 =
       new Sensor(std::string("AIN5"), std::vector<std::string>{"AIN5_RANGE"},
                  std::vector<double>{0.1});
