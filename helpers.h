@@ -32,19 +32,19 @@ union udouble {
 inline const std::map<std::string, std::string> vlj = {
     {"V11_NO", "DIO0"},  {"V30", "DIO1"},     {"V12_NO", "DIO2"},
     {"V31", "DIO3"},     {"V20", "DIO4"},     {"V32", "DIO5"},
-    {"V21", "DIO6"},     {"V33_NO", "DIO7"},  {"V35_NO", "DIO8"},
+    {"V21", "DIO6"},     {"V33", "DIO7"},  {"V35_NO", "DIO8"},
     {"V36", "DIO9"},     {"V34", "DIO10"},    {"V38_NO", "DIO11"},
     {"V37", "DIO12"},    {"V23_NO", "DIO13"}, {"V10", "DIO14"},
-    {"V22_NO", "DIO15"},
+    {"V22", "DIO15"},
 };
 
 inline const std::map<std::string, std::string> vljf = {
     {"DIO0", "V11_NO"},  {"DIO1", "V30"},     {"DIO2", "V12_NO"},
     {"DIO3", "V31"},     {"DIO4", "V20"},     {"DIO5", "V32"},
-    {"DIO6", "V21"},     {"DIO7", "V33_NO"},  {"DIO8", "V35_NO"},
+    {"DIO6", "V21"},     {"DIO7", "V33"},  {"DIO8", "V35_NO"},
     {"DIO9", "V36"},     {"DIO10", "V34"},    {"DIO11", "V38_NO"},
     {"DIO12", "V37"},    {"DIO13", "V23_NO"}, {"DIO14", "V10"},
-    {"DIO15", "V22_NO"},
+    {"DIO15", "V22"},
 };
 
 inline std::mutex coutm;
@@ -169,12 +169,12 @@ public:
     valves["V12_NO"] = true; // NO valve
     valves["V20"] = false;
     valves["V21"] = false;
-    valves["V22_NO"] = true; // NO valve
+    valves["V22"] = false; 
     valves["V23_NO"] = true; // NO valve
     valves["V30"] = false;
     valves["V31"] = false;
     valves["V32"] = false;
-    valves["V33_NO"] = true; // NO valve
+    valves["V33"] = false;
     valves["V34"] = false;
     valves["V35_NO"] = true; // NO valve
     valves["V36"] = false;
