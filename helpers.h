@@ -15,13 +15,11 @@ namespace bs = boost::signals2;
 using json = nlohmann::json;
 using namespace std::chrono_literals;
 
-extern std::mutex sigm;
-extern ba::thread_pool pool;
-extern std::condition_variable sigcondition;
-extern std::string vData;
-extern std::atomic<bool> isString;
+// extern ba::thread_pool pool;
+extern std::shared_ptr<ba::thread_pool> poolptr;
 extern std::atomic<bool> enabled;
 extern std::condition_variable suspend_write;
+extern int FastJack;
 namespace mach {
 using Timestamp = uint64_t;
 Timestamp now();
@@ -32,19 +30,19 @@ union udouble {
 inline const std::map<std::string, std::string> vlj = {
     {"V11_NO", "DIO0"},  {"V30", "DIO1"},     {"V12_NO", "DIO2"},
     {"V31", "DIO3"},     {"V20", "DIO4"},     {"V32", "DIO5"},
-    {"V21", "DIO6"},     {"V33_NO", "DIO7"},  {"V35_NO", "DIO8"},
+    {"V21", "DIO6"},     {"V33", "DIO7"},  {"V35_NO", "DIO8"},
     {"V36", "DIO9"},     {"V34", "DIO10"},    {"V38_NO", "DIO11"},
     {"V37", "DIO12"},    {"V23_NO", "DIO13"}, {"V10", "DIO14"},
-    {"V22_NO", "DIO15"},
+    {"V22", "DIO15"},
 };
 
 inline const std::map<std::string, std::string> vljf = {
     {"DIO0", "V11_NO"},  {"DIO1", "V30"},     {"DIO2", "V12_NO"},
     {"DIO3", "V31"},     {"DIO4", "V20"},     {"DIO5", "V32"},
-    {"DIO6", "V21"},     {"DIO7", "V33_NO"},  {"DIO8", "V35_NO"},
+    {"DIO6", "V21"},     {"DIO7", "V33"},  {"DIO8", "V35_NO"},
     {"DIO9", "V36"},     {"DIO10", "V34"},    {"DIO11", "V38_NO"},
     {"DIO12", "V37"},    {"DIO13", "V23_NO"}, {"DIO14", "V10"},
-    {"DIO15", "V22_NO"},
+    {"DIO15", "V22"},
 };
 
 inline std::mutex coutm;
@@ -52,11 +50,10 @@ struct Sensor;
 struct LJSensors;
 struct SocketConn;
 struct Server;
-inline unsigned short PORT = 6970;
+inline unsigned short PORT = 6971;
 
 uint64_t sToMs(uint32_t seconds);
 void sleep(uint64_t milliseconds);
-void dispatchValve(const std::string &name, int handle);
 
 const char **vectorToChar(const std::vector<std::string> &stringVector);
 
@@ -145,8 +142,8 @@ struct LJSensors {
       new Sensor(std::string("AIN6"), std::vector<std::string>{"AIN6_RANGE"},
                  std::vector<double>{0.1});
   mach::Sensor *ign =
-      new Sensor(std::string("AIN4"), std::vector<std::string>{"AIN4_RANGE"},
-                 std::vector<double>{0.1});
+      new Sensor(std::string("AIN8"), std::vector<std::string>{"AIN8_RANGE", "AIN8_NEGATIVE_CH"},
+                 std::vector<double>{0.1, 9});
   mach::Sensor *p20 = // p20
       new Sensor(std::string("AIN1"), std::vector<std::string>{"AIN1_RANGE"},
                  std::vector<double>{10});
@@ -169,12 +166,12 @@ public:
     valves["V12_NO"] = true; // NO valve
     valves["V20"] = false;
     valves["V21"] = false;
-    valves["V22_NO"] = true; // NO valve
+    valves["V22"] = false; 
     valves["V23_NO"] = true; // NO valve
     valves["V30"] = false;
     valves["V31"] = false;
     valves["V32"] = false;
-    valves["V33_NO"] = true; // NO valve
+    valves["V33"] = false; 
     valves["V34"] = false;
     valves["V35_NO"] = true; // NO valve
     valves["V36"] = false;
@@ -240,18 +237,19 @@ public:
   }
 };
 
+void dispatchValve(const std::string &name, int handle, std::shared_ptr<State> &state);
 struct SocketConn : std::enable_shared_from_this<SocketConn> {
   explicit SocketConn(ba::any_io_executor const &ioContext,
-                      std::stop_source &stopSource, const int &lj);
+                      std::stop_source &stopSource, const int &lj, std::shared_ptr<State> &st);
 
   void start();
 
-  void send(const std::string msg, const bool immediate = false);
+  void send(std::string msg, bool immediate = false);
 
 private:
   void input();
 
-  bool nq(const std::string msg, const bool immediate);
+  bool nq(std::string msg, bool immediate);
 
   // return true if messages are pending post-dequeue
   bool dq();
@@ -266,6 +264,7 @@ private:
   ba::ip::tcp::socket _s;
   bs::scoped_connection _sig;
   std::stop_source _ss;
+  std::shared_ptr<State> _st;
   int labjack;
 };
 

@@ -1,0 +1,14 @@
+[
+{
+  "directory": "/home/mach/MACH/engine_computer/build",
+  "command": "/usr/bin/g++  -I/home/mach/MACH/engine_computer/lib -I/home/mach/MACH/engine_computer/build -I/home/mach/MACH/engine_computer/build/_deps/json-src/include -g -std=gnu++20 -o CMakeFiles/engine_computer.dir/main.cpp.o -c /home/mach/MACH/engine_computer/main.cpp",
+  "file": "/home/mach/MACH/engine_computer/main.cpp",
+  "output": "CMakeFiles/engine_computer.dir/main.cpp.o"
+},
+{
+  "directory": "/home/mach/MACH/engine_computer/build",
+  "command": "/usr/bin/g++  -I/home/mach/MACH/engine_computer/lib -I/home/mach/MACH/engine_computer/build -I/home/mach/MACH/engine_computer/build/_deps/json-src/include -g -std=gnu++20 -o CMakeFiles/engine_computer.dir/helpers.cpp.o -c /home/mach/MACH/engine_computer/helpers.cpp",
+  "file": "/home/mach/MACH/engine_computer/helpers.cpp",
+  "output": "CMakeFiles/engine_computer.dir/helpers.cpp.o"
+}
+]

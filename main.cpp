@@ -7,11 +7,11 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <thread>
 
 using namespace std::chrono_literals;
 namespace ba = boost::asio;
-boost::signals2::signal<void(std::string)> socketSignal;
 std::stop_source test;
 std::stop_token token = test.get_token();
 int SlowJack, FastJack;
@@ -20,7 +20,7 @@ int numSlowJack{10}, numFastJack{8};
 // AIN7, AIN9, AIN14, AIN0, AIN1, AIN2, AIN3, AIN4, AIN5, AIN11
 const std::array<int, 10> slowScanList{14, 18, 28, 0, 2, 4, 6, 8, 10, 22};
 // AIN 1, 7, 0, 2, 5, 6, 4, 14
-const std::array<int, 8> fastScanList{2, 14, 0, 4, 10, 12, 8, 28};
+const std::array<int, 8> fastScanList{2, 14, 0, 4, 10, 12, 16, 28};
 auto scanListC = slowScanList.data();
 auto scanListCFast = fastScanList.data();
 double *scanRate = new double{10};
@@ -28,12 +28,9 @@ double *scanRateFast = new double{10};
 std::mutex writem;
 std::condition_variable suspend_write;
 std::atomic<bool> enabled = true;
-std::mutex sigm;
-std::condition_variable sigcondition;
-std::atomic<bool> isString = false;
 std::vector<std::jthread> threads{};
-std::string vData;
 ba::thread_pool pool(50);
+std::shared_ptr<ba::thread_pool> poolptr = std::make_shared<ba::thread_pool>(5);
 
 void handlesigint(const int signal_num) {
   test.request_stop();
@@ -256,14 +253,15 @@ int main() {
     double t1K, t2K, inj1K, inj2K, ignK = 0;
     err = LJM_eStreamRead(SlowJack, slowData, &devicebacklog, &ljmbacklog);
     err = LJM_eStreamRead(FastJack, fastData, &devicebacklog, &ljmbacklog);
-    ErrorCheck(err, "LJM_eStreamRead");
     double slowTempK = (slowData[2] * -92.6 + 467.6);
     double fastTempK = (fastData[7] * -92.6 + 467.6);
+    double fastTempK2 = (fastData[7] * -92.6 + 467.6);
+    double fastTempK3 = (fastData[7] * -92.6 + 467.6);
     err = LJM_TCVoltsToTemp(6004, slowData[0], slowTempK, &t1K);
     err = LJM_TCVoltsToTemp(6004, slowData[1], slowTempK, &t2K);
     err = LJM_TCVoltsToTemp(6004, fastData[4], fastTempK, &inj1K);
-    err = LJM_TCVoltsToTemp(6004, fastData[5], fastTempK, &inj2K);
-    err = LJM_TCVoltsToTemp(6004, fastData[6], fastTempK, &ignK);
+    err = LJM_TCVoltsToTemp(6004, fastData[5], fastTempK2, &inj2K);
+    err = LJM_TCVoltsToTemp(6004, fastData[6], fastTempK3, &ignK);
     sharedState->lj.t1val = (t1K - 273);
     sharedState->lj.t2val = (t2K - 273);
     sharedState->lj.inj1val = (inj1K - 273);
@@ -277,7 +275,7 @@ int main() {
     sharedState->lj.p20val = (fastData[0] * 300);
     sharedState->lj.p30val = (fastData[1] * 300);
     sharedState->lj.pinjval = (fastData[2] * 300);
-    sharedState->lj.ignval = (fastData[3] * 200);
+    sharedState->lj.lcellval = (fastData[3] * 200);
     //      std::cout << "t2val:" << sharedState->lj.t2val << " ";
     //      std::cout << "p10val:" << sharedState->lj.p10val << "\n";
     //      std::cout << "p21val:" << sharedState->lj.p21val << " ";
@@ -298,7 +296,7 @@ int main() {
     sharedState->setValves(state);
     s.emit(sharedState);
   }
-  std::this_thread::sleep_for(10s);
+  // std::this_thread::sleep_for(10s);
   s.stop();
   test.request_stop();
   for (auto &thread : threads) {
