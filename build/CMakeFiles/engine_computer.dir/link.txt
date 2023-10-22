@@ -1,1 +1,0 @@
-/usr/bin/g++ -g CMakeFiles/engine_computer.dir/main.cpp.o CMakeFiles/engine_computer.dir/helpers.cpp.o -o engine_computer  -Wl,-rpath,/usr/local/lib /usr/local/lib/libLabJackM.so 
