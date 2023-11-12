@@ -34,6 +34,9 @@ std::atomic<bool> enabled = true;
 std::vector<std::jthread> threads{};
 ba::thread_pool pool(50);
 std::shared_ptr<ba::thread_pool> poolptr = std::make_shared<ba::thread_pool>(5);
+std::condition_variable abort_cv;
+std::atomic<bool> abort_flag = false;
+std::mutex abort_mutex;
 
 void handlesigint(const int signal_num) {
   test.request_stop();
