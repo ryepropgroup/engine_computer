@@ -331,7 +331,6 @@ void mach::SocketConn::input() {
     if (val == "op6") {
       poolptr->stop();
       std::cout<<"past stop" <<std::endl;
-      std::terminate(); // ?
       {
         std::lock_guard<std::mutex> lock(abort_mutex);
         abort_flag.store(true);
@@ -340,6 +339,7 @@ void mach::SocketConn::input() {
       poolptr->join();
       std::cout<<"past join" <<std::endl;
       poolptr.reset();
+      abort_flag.store(false);
       std::cout<<"past reset" <<std::endl;
       poolptr = std::make_shared<ba::thread_pool>(5);
       std::cout<<"past shared" <<std::endl;
