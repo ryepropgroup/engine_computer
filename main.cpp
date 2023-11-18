@@ -19,8 +19,11 @@ int spr{1};
 int numSlowJack{10}, numFastJack{8};
 // AIN7, AIN9, AIN14, AIN0, AIN1, AIN2, AIN3, AIN4, AIN5, AIN11
 const std::array<int, 10> slowScanList{14, 18, 28, 0, 2, 4, 6, 8, 10, 22};
-// AIN 1, 7, 0, 2, 5, 6, 4, 14
-const std::array<int, 8> fastScanList{2, 14, 0, 4, 10, 12, 16, 28};
+// (OLD) AIN 1, 7, 0, 2, 5, 6, 4, 14
+//const std::array<int, 8> fastScanList{2, 14, 0, 4, 10, 12, 16, 28}; //mistake for AIN4? -kai
+
+// (NEW) AIN 0, 2, 3, 4, 6, 8, 10, 14
+const std::array<int, 8> fastScanList{0, 4, 6, 8, 12, 16, 20, 28};
 auto scanListC = slowScanList.data();
 auto scanListCFast = fastScanList.data();
 double *scanRate = new double{10};
@@ -71,13 +74,13 @@ void run_signal(const std::shared_ptr<mach::State> st) {
    * p22 -> AIN 11
    *
    * labjack 2
-   * p20 -> AIN 1
-   * p30 -> AIN 7
-   * pINJ -> AIN 0
-   * lc -> AIN 2
-   * inj1 -> AIN 5
-   * inj2 -> AIN 6
-   * ign -> AIN 4
+   * p20 -> AIN 3
+   * p30 -> AIN 2
+   * pINJ -> AIN 4
+   * lc -> AIN 0 (AIN1 NEG)
+   * inj1 -> AIN 10 (AIN11 NEG)
+   * inj2 -> AIN 8 (AIN9 NEG)
+   * ign -> AIN 6 (AIN7 NEG)
    *
    */
   // LabJack Initialization

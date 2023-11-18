@@ -130,25 +130,25 @@ struct LJSensors {
                      "AIN9_EF_CONFIG_E", "AIN9_EF_CONFIG_A"},
                  std::vector<double>{22, 60052, 1.0, 0.0, 1});
   mach::Sensor *pinj =
-      new Sensor(std::string("AIN0"), std::vector<std::string>{"AIN0_RANGE"},
+      new Sensor(std::string("AIN4"), std::vector<std::string>{"AIN4_RANGE"},
                  std::vector<double>{10});
-  mach::Sensor *lc = new Sensor(std::string("AIN2"),
-                                std::vector<std::string>{"AIN2_NEGATIVE_CH"},
-                                std::vector<double>{3.0});
+  mach::Sensor *lc = new Sensor(std::string("AIN0"),
+                                std::vector<std::string>{"AIN0_NEGATIVE_CH"},
+                                std::vector<double>{1.0});
   mach::Sensor *inj1 =
-      new Sensor(std::string("AIN5"), std::vector<std::string>{"AIN5_RANGE"},
-                 std::vector<double>{0.1});
+      new Sensor(std::string("AIN10"), std::vector<std::string>{"AIN10_RANGE", "AIN10_NEGATIVE_CH"},
+                 std::vector<double>{0.1, 11.0});
   mach::Sensor *inj2 =
-      new Sensor(std::string("AIN6"), std::vector<std::string>{"AIN6_RANGE"},
-                 std::vector<double>{0.1});
-  mach::Sensor *ign =
       new Sensor(std::string("AIN8"), std::vector<std::string>{"AIN8_RANGE", "AIN8_NEGATIVE_CH"},
-                 std::vector<double>{0.1, 9});
+                 std::vector<double>{0.1, 9.0});
+  mach::Sensor *ign =
+      new Sensor(std::string("AIN6"), std::vector<std::string>{"AIN6_RANGE", "AIN6_NEGATIVE_CH"},
+                 std::vector<double>{0.1, 7.0});
   mach::Sensor *p20 = // p20
-      new Sensor(std::string("AIN1"), std::vector<std::string>{"AIN1_RANGE"},
+      new Sensor(std::string("AIN3"), std::vector<std::string>{"AIN3_RANGE"},
                  std::vector<double>{10});
   mach::Sensor *p30 = // p30
-      new Sensor(std::string("AIN7"), std::vector<std::string>{"AIN7_RANGE"},
+      new Sensor(std::string("AIN2"), std::vector<std::string>{"AIN2_RANGE"},
                  std::vector<double>{10});
 };
 

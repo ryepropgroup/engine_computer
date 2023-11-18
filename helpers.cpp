@@ -243,6 +243,7 @@ void mach::dispatchValve(const std::string &name, int handle, std::shared_ptr<St
     LJM_eWriteName(handle, vlj.at("V33").c_str(), 0);
     std::this_thread::sleep_for(2.5s);
     // close v20 and open v22
+    std::this_thread::sleep_for(150ms); //extra eth valve delay
     LJM_eWriteName(handle, vlj.at("V20").c_str(), 1);
     LJM_eWriteName(handle, vlj.at("V22").c_str(), 0);
     std::this_thread::sleep_for(3s);
