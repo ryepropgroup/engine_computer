@@ -45,4 +45,4 @@ add_library(json INTERFACE)
 target_include_directories(json INTERFACE ${json_SOURCE_DIR}/include)
 
 # link all libs
-target_link_libraries(engine_computer PRIVATE pthread ${LJM} ${BOOST_Libraries} json)
+target_link_libraries(engine_computer PRIVATE ${LJM} ${BOOST_Libraries} json)
