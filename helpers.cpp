@@ -210,6 +210,18 @@ void mach::dispatchValve(const std::string &name, int handle, std::shared_ptr<St
     return;
   };
 
+  
+  /*
+   * Ignition sequence
+   * Turn on ingnitor
+   */
+  if (name == "ign") {
+    // Turn on igitor
+    LJM_eWriteName(FastJack, "DIO6", 0);
+
+    return;
+  };
+
   /*
    * 5.0.2 Hot Fire sequence
    * open v34
@@ -250,7 +262,7 @@ void mach::dispatchValve(const std::string &name, int handle, std::shared_ptr<St
     LJM_eWriteName(handle, vlj.at("V33").c_str(), 0);
     if (sleepOrAbort(2.5s)) return;
     // close v20 and open v22
-    std::this_thread::sleep_for(150ms); //extra eth valve delay
+    if (sleepOrAbort(150ms)) return; //extra eth valve delay
     LJM_eWriteName(handle, vlj.at("V20").c_str(), 1);
     LJM_eWriteName(handle, vlj.at("V22").c_str(), 0);
     if (sleepOrAbort(3s)) return;
@@ -328,7 +340,7 @@ void mach::SocketConn::input() {
       std::lock_guard<std::mutex> l(coutm);
       std::cout << val << std::endl;
     }
-    if (val == "op6") {
+    if (val == "abort") {
       poolptr->stop();
       std::cout<<"past stop" <<std::endl;
       {
