@@ -51,10 +51,17 @@ void mach::SocketConn::send(std::string msg, bool immediate) {
        });
 }
 
+template<typename Rep, typename Period>
+bool mach::sleepOrAbort(std::chrono::duration<Rep, Period> duration) {
+    std::unique_lock<std::mutex> lock(abort_mutex);
+    abort_cv.wait_for(lock, duration, []() { return abort_flag.load(); });
+    return abort_flag.load();
+}
+
 void mach::dispatchValve(const std::string &name, int handle, std::shared_ptr<State> &state) {
   if (name == "banana") {
     LJM_eWriteName(FastJack, "DIO6", 0);
-    std::this_thread::sleep_for(1s);
+    if (sleepOrAbort(1s)) return;
     LJM_eWriteName(FastJack, "DIO6", 1);
     return;
   }
@@ -157,17 +164,17 @@ void mach::dispatchValve(const std::string &name, int handle, std::shared_ptr<St
   if (name == "403") {
     // open v34
     LJM_eWriteName(handle, vlj.at("V34").c_str(), 0);
-    std::this_thread::sleep_for(10s);
+    if (sleepOrAbort(10s)) return;
     // close v34
     LJM_eWriteName(handle, vlj.at("V34").c_str(), 1);
     // open v30
     LJM_eWriteName(handle, vlj.at("V30").c_str(), 0);
-    std::this_thread::sleep_for(3s);
+    if (sleepOrAbort(3s)) return;
     // close v30 and v31 and open v33
     LJM_eWriteName(handle, vlj.at("V30").c_str(), 1);
     LJM_eWriteName(handle, vlj.at("V31").c_str(), 1);
     LJM_eWriteName(handle, vlj.at("V33").c_str(), 0);
-    std::this_thread::sleep_for(7s);
+    if (sleepOrAbort(7s)) return;
     LJM_eWriteName(handle, vlj.at("V33").c_str(), 1);
     return;
   };
@@ -188,18 +195,30 @@ void mach::dispatchValve(const std::string &name, int handle, std::shared_ptr<St
   if (name == "403a") {
     // open v34
     LJM_eWriteName(handle, vlj.at("V34").c_str(), 0);
-    std::this_thread::sleep_for(10s);
+    if (sleepOrAbort(10s)) return;
     // close v34
     LJM_eWriteName(handle, vlj.at("V34").c_str(), 1);
     // open v30
     LJM_eWriteName(handle, vlj.at("V30").c_str(), 0);
-    std::this_thread::sleep_for(7s);
+    if (sleepOrAbort(7s)) return;
     // close v30 and v31 and open v33
     LJM_eWriteName(handle, vlj.at("V30").c_str(), 1);
     LJM_eWriteName(handle, vlj.at("V31").c_str(), 1);
     LJM_eWriteName(handle, vlj.at("V33").c_str(), 0);
-    std::this_thread::sleep_for(3s);
+    if (sleepOrAbort(3s)) return;
     LJM_eWriteName(handle, vlj.at("V33").c_str(), 1);
+    return;
+  };
+
+  
+  /*
+   * Ignition sequence
+   * Turn on ingnitor
+   */
+  if (name == "ign") {
+    // Turn on igitor
+    LJM_eWriteName(FastJack, "DIO6", 0);
+
     return;
   };
 
@@ -227,26 +246,26 @@ void mach::dispatchValve(const std::string &name, int handle, std::shared_ptr<St
   if (name == "502") {
     // open v34
     LJM_eWriteName(handle, vlj.at("V34").c_str(), 0);
-    std::this_thread::sleep_for(10s);
+    if (sleepOrAbort(10s)) return;
     // Turn on igitor and wait until thermocouple reaches 900C
     LJM_eWriteName(FastJack, "DIO6", 0);
     while(state->lj.ignval < 365){
-    std::this_thread::sleep_for(1us);
+      if (sleepOrAbort(1us)) return;
     }
     // close v34, open v20 and open v30
     LJM_eWriteName(handle, vlj.at("V34").c_str(), 1);
     LJM_eWriteName(handle, vlj.at("V20").c_str(), 0);
     LJM_eWriteName(handle, vlj.at("V30").c_str(), 0);
-    std::this_thread::sleep_for(4.5s);
+    if (sleepOrAbort(4.5s)) return;
     // close v30 and open v33
     LJM_eWriteName(handle, vlj.at("V30").c_str(), 1);
     LJM_eWriteName(handle, vlj.at("V33").c_str(), 0);
-    std::this_thread::sleep_for(2.5s);
+    if (sleepOrAbort(2.5s)) return;
     // close v20 and open v22
-    std::this_thread::sleep_for(150ms); //extra eth valve delay
+    if (sleepOrAbort(150ms)) return; //extra eth valve delay
     LJM_eWriteName(handle, vlj.at("V20").c_str(), 1);
     LJM_eWriteName(handle, vlj.at("V22").c_str(), 0);
-    std::this_thread::sleep_for(3s);
+    if (sleepOrAbort(3s)) return;
     LJM_eWriteName(handle, vlj.at("V33").c_str(), 1);
     LJM_eWriteName(handle, vlj.at("V22").c_str(), 1);
     LJM_eWriteName(handle, vlj.at("V31").c_str(), 1);
@@ -321,13 +340,18 @@ void mach::SocketConn::input() {
       std::lock_guard<std::mutex> l(coutm);
       std::cout << val << std::endl;
     }
-    if (val == "op6") {
+    if (val == "abort") {
       poolptr->stop();
       std::cout<<"past stop" <<std::endl;
-      std::terminate();
+      {
+        std::lock_guard<std::mutex> lock(abort_mutex);
+        abort_flag.store(true);
+      }
+      abort_cv.notify_all();
       poolptr->join();
       std::cout<<"past join" <<std::endl;
       poolptr.reset();
+      abort_flag.store(false);
       std::cout<<"past reset" <<std::endl;
       poolptr = std::make_shared<ba::thread_pool>(5);
       std::cout<<"past shared" <<std::endl;

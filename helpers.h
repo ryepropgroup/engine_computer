@@ -20,6 +20,10 @@ extern std::shared_ptr<ba::thread_pool> poolptr;
 extern std::atomic<bool> enabled;
 extern std::condition_variable suspend_write;
 extern int FastJack;
+extern std::condition_variable abort_cv;
+extern std::atomic<bool> abort_flag;
+extern std::mutex abort_mutex;
+
 namespace mach {
 using Timestamp = uint64_t;
 Timestamp now();
@@ -58,6 +62,9 @@ void sleep(uint64_t milliseconds);
 const char **vectorToChar(const std::vector<std::string> &stringVector);
 
 const double *vectorToDouble(const std::vector<double> &doubleVector);
+
+template<typename Rep, typename Period>
+bool sleepOrAbort(std::chrono::duration<Rep, Period> duration);
 
 struct Sensor {
   Sensor(std::string name, std::vector<std::string> params,
