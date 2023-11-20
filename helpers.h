@@ -54,7 +54,7 @@ struct Sensor;
 struct LJSensors;
 struct SocketConn;
 struct Server;
-inline unsigned short PORT = 6971;
+inline unsigned short PORT = 6959;
 
 uint64_t sToMs(uint32_t seconds);
 void sleep(uint64_t milliseconds);
@@ -84,8 +84,8 @@ struct Sensor {
  * p21 -> AIN 2
  * p32 -> AIN 3
  * p10 -> AIN 4
- * TC 1 -> AIN 7
- * TC 2 -> AIN 9
+ * TC 1 (actuslly t2)-> AIN 7
+ * TC 2  (actuslly t3)-> AIN 9
  * p22 -> AIN 11
  *
  * labjack 2
@@ -127,8 +127,8 @@ struct LJSensors {
       std::string("AIN7"),
       std::vector<std::string>{"AIN7_EF_INDEX", "AIN7_EF_CONFIG_B",
                                "AIN7_EF_CONFIG_D", "AIN7_EF_CONFIG_E",
-                               "AIN7_EF_CONFIG_A", "AIN7_NEGATIVE_CH"},
-      std::vector<double>{22, 60052, 1.0, 0.0, 1, 1});
+                               "AIN7_EF_CONFIG_A"},
+      std::vector<double>{22, 60052, 1.0, 0.0, 1});
 
   mach::Sensor *t2 =
       new Sensor(std::string("AIN9"),

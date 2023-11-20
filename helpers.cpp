@@ -59,9 +59,9 @@ bool mach::sleepOrAbort(std::chrono::duration<Rep, Period> duration) {
 }
 
 void mach::dispatchValve(const std::string &name, int handle, std::shared_ptr<State> &state) {
-  if (name == "banana") {
+  if (name == "ign") {
     LJM_eWriteName(FastJack, "DIO6", 0);
-    if (sleepOrAbort(1s)) return;
+    if (sleepOrAbort(5s)) return;
     LJM_eWriteName(FastJack, "DIO6", 1);
     return;
   }
@@ -215,12 +215,12 @@ void mach::dispatchValve(const std::string &name, int handle, std::shared_ptr<St
    * Ignition sequence
    * Turn on ingnitor
    */
-  if (name == "ign") {
-    // Turn on igitor
-    LJM_eWriteName(FastJack, "DIO6", 0);
+  // if (name == "ign") {
+  //   // Turn on igitor
+  //   LJM_eWriteName(FastJack, "DIO6", 0);
 
-    return;
-  };
+  //   return;
+  // };
 
   /*
    * 5.0.2 Hot Fire sequence
@@ -246,7 +246,7 @@ void mach::dispatchValve(const std::string &name, int handle, std::shared_ptr<St
   if (name == "502") {
     // open v34
     LJM_eWriteName(handle, vlj.at("V34").c_str(), 0);
-    if (sleepOrAbort(10s)) return;
+    if (sleepOrAbort(5s)) return;
     // Turn on igitor and wait until thermocouple reaches 900C
     LJM_eWriteName(FastJack, "DIO6", 0);
     while(state->lj.ignval < 365){
@@ -262,7 +262,6 @@ void mach::dispatchValve(const std::string &name, int handle, std::shared_ptr<St
     LJM_eWriteName(handle, vlj.at("V33").c_str(), 0);
     if (sleepOrAbort(2.5s)) return;
     // close v20 and open v22
-    if (sleepOrAbort(150ms)) return; //extra eth valve delay
     LJM_eWriteName(handle, vlj.at("V20").c_str(), 1);
     LJM_eWriteName(handle, vlj.at("V22").c_str(), 0);
     if (sleepOrAbort(3s)) return;
@@ -371,6 +370,21 @@ void mach::SocketConn::input() {
       LJM_eWriteName(labjack, mach::vlj.at("V33").c_str(), 1);
       LJM_eWriteName(labjack, mach::vlj.at("V35_NO").c_str(), 1);
       LJM_eWriteName(labjack, mach::vlj.at("V38_NO").c_str(), 0);
+
+
+
+      // LJM_eWriteName(labjack, mach::vlj.at("V10").c_str(), 0);
+      // LJM_eWriteName(labjack, mach::vlj.at("V12_NO").c_str(), 1);
+      // LJM_eWriteName(labjack, mach::vlj.at("V38_NO").c_str(), 1);
+      // LJM_eWriteName(labjack, mach::vlj.at("V11_NO").c_str(), 1);
+      // LJM_eWriteName(labjack, mach::vlj.at("V33").c_str(), 0);
+      // LJM_eWriteName(labjack, mach::vlj.at("V22").c_str(), 0);
+      // if (sleepOrAbort(3s)) return;
+      // LJM_eWriteName(labjack, mach::vlj.at("V33").c_str(), 1);
+      // LJM_eWriteName(labjack, mach::vlj.at("V22").c_str(), 1);
+      // LJM_eWriteName(labjack, mach::vlj.at("V16").c_str(), 1);
+      // LJM_eWriteName(labjack, mach::vlj.at("V12_NO").c_str(), 0);
+      
       std::cout<<" ABORT DONE LOL" <<std::endl;
       return;
     }

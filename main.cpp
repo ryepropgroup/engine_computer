@@ -265,9 +265,9 @@ int main() {
     double fastTempK3 = (fastData[7] * -92.6 + 467.6);
     err = LJM_TCVoltsToTemp(6004, slowData[0], slowTempK, &t1K);
     err = LJM_TCVoltsToTemp(6004, slowData[1], slowTempK, &t2K);
-    err = LJM_TCVoltsToTemp(6004, fastData[4], fastTempK, &inj1K);
+    err = LJM_TCVoltsToTemp(6004, fastData[6], fastTempK, &inj1K);
     err = LJM_TCVoltsToTemp(6004, fastData[5], fastTempK2, &inj2K);
-    err = LJM_TCVoltsToTemp(6004, fastData[6], fastTempK3, &ignK);
+    err = LJM_TCVoltsToTemp(6004, fastData[4], fastTempK3, &ignK);
     sharedState->lj.t1val = (t1K - 273);
     sharedState->lj.t2val = (t2K - 273);
     sharedState->lj.inj1val = (inj1K - 273);
@@ -278,10 +278,10 @@ int main() {
     sharedState->lj.p22val = (slowData[9] * 300);
     sharedState->lj.p32val = (slowData[6] * 300);
     sharedState->lj.p10val = (slowData[7] * 300);
-    sharedState->lj.p20val = (fastData[0] * 300);
-    sharedState->lj.p30val = (fastData[1] * 300);
-    sharedState->lj.pinjval = (fastData[2] * 300);
-    sharedState->lj.lcellval = (fastData[3] * 200);
+    sharedState->lj.p20val = (fastData[2] * 100);
+    sharedState->lj.p30val = (fastData[1] * 100);
+    sharedState->lj.pinjval = (fastData[3] * 100);
+    sharedState->lj.lcellval = -(fastData[0] * 200);
     //      std::cout << "t2val:" << sharedState->lj.t2val << " ";
     //      std::cout << "p10val:" << sharedState->lj.p10val << "\n";
     //      std::cout << "p21val:" << sharedState->lj.p21val << " ";
