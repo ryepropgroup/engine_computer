@@ -12,4 +12,3 @@
 1. Clone repository
 2. Verify dependencies are installed
 3. Run `mkdir build && cd build && cmake ..` to build
-[//]: # (3. Make sure you have an active internet connection)

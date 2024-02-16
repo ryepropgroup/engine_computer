@@ -178,7 +178,7 @@ public:
     valves["V30"] = false;
     valves["V31"] = false;
     valves["V32"] = false;
-    valves["V33"] = false; 
+    valves["V33"] = false;
     valves["V34"] = false;
     valves["V35_NO"] = true; // NO valve
     valves["V36"] = false;
