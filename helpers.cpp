@@ -1,24 +1,28 @@
 #include "helpers.h"
 #include "LabJackM.h"
+#include <boost/asio/thread_pool.hpp>
+#include <exception>
 #include <memory>
+#include <memory_resource>
 #include <string>
+#include <thread>
 #include <vector>
 uint64_t mach::sToMs(uint32_t sec) {
   using namespace std::chrono;
   seconds duration(sec);
-  milliseconds msDuration = duration_cast<milliseconds >(duration);
+  milliseconds msDuration = duration_cast<milliseconds>(duration);
   return msDuration.count();
 }
-void mach::sleep(uint64_t milliseconds){
+void mach::sleep(uint64_t milliseconds) {
   auto start = std::chrono::high_resolution_clock::now();
   while (true) {
     auto now = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - start);
+    auto duration =
+        std::chrono::duration_cast<std::chrono::milliseconds>(now - start);
     if (duration.count() >= milliseconds) {
       break;
     }
   }
-
 }
 mach::Timestamp mach::now() {
   return mach::Timestamp(
@@ -47,15 +51,27 @@ void mach::SocketConn::send(std::string msg, bool immediate) {
        });
 }
 
-void mach::dispatchValve(const std::string& name , int handle) {
-  std::cout<<"potato"<<std::endl;
-  if(name=="wstart"){
+template<typename Rep, typename Period>
+bool mach::sleepOrAbort(std::chrono::duration<Rep, Period> duration) {
+    std::unique_lock<std::mutex> lock(abort_mutex);
+    abort_cv.wait_for(lock, duration, []() { return abort_flag.load(); });
+    return abort_flag.load();
+}
+
+void mach::dispatchValve(const std::string &name, int handle, std::shared_ptr<State> &state) {
+  if (name == "ign") {
+    LJM_eWriteName(FastJack, "DIO6", 0);
+    if (sleepOrAbort(5s)) return;
+    LJM_eWriteName(FastJack, "DIO6", 1);
+    return;
+  }
+  if (name == "wstart") {
     enabled = true;
     suspend_write.notify_all();
     return;
   }
-  if(name=="wstop"){
-    enabled=false;
+  if (name == "wstop") {
+    enabled = false;
     suspend_write.notify_all();
     return;
   }
@@ -71,9 +87,9 @@ void mach::dispatchValve(const std::string& name , int handle) {
     LJM_eWriteName(handle, mach::vlj.at("V37").c_str(), 1);
     LJM_eWriteName(handle, mach::vlj.at("V11_NO").c_str(), 1);
     LJM_eWriteName(handle, mach::vlj.at("V12_NO").c_str(), 1);
-    LJM_eWriteName(handle, mach::vlj.at("V22_NO").c_str(), 1);
+    LJM_eWriteName(handle, mach::vlj.at("V22").c_str(), 1);
     LJM_eWriteName(handle, mach::vlj.at("V23_NO").c_str(), 1);
-    LJM_eWriteName(handle, mach::vlj.at("V33_NO").c_str(), 1);
+    LJM_eWriteName(handle, mach::vlj.at("V33").c_str(), 1);
     LJM_eWriteName(handle, mach::vlj.at("V35_NO").c_str(), 1);
     LJM_eWriteName(handle, mach::vlj.at("V38_NO").c_str(), 1);
     return;
@@ -114,26 +130,26 @@ void mach::dispatchValve(const std::string& name , int handle) {
    * 3 seconds later
    * close v20
    */
-  if (name == "411f") {
-    // open v21
-    //        LJM_eWriteName(SlowJack, vlj.at("V21").c_str(), 0);
-//    std::this_thread::sleep_for(10s);
-    sleep(sToMs(10));
-    // open v20
-    LJM_eWriteName(handle, vlj.at("V20").c_str(), 0);
-//    std::this_thread::sleep_for(7s);
-    sleep(sToMs(7));
-    // close v21
-    LJM_eWriteName(handle, vlj.at("V21").c_str(), 1);
-//    std::this_thread::sleep_for(3s);
-    sleep(sToMs(3));
-    // close v20
-    LJM_eWriteName(handle, vlj.at("V20").c_str(), 1);
-    // close
-    return;
-  }
+  //   if (name == "411f") {
+  //     // open v21
+  //     //        LJM_eWriteName(SlowJack, vlj.at("V21").c_str(), 0);
+  // //    std::this_thread::sleep_for(10s);
+  //     sleep(sToMs(10));
+  //     // open v20
+  //     LJM_eWriteName(handle, vlj.at("V20").c_str(), 0);
+  // //    std::this_thread::sleep_for(7s);
+  //     sleep(sToMs(7));
+  //     // close v21
+  //     LJM_eWriteName(handle, vlj.at("V21").c_str(), 1);
+  // //    std::this_thread::sleep_for(3s);
+  //     sleep(sToMs(3));
+  //     // close v20
+  //     LJM_eWriteName(handle, vlj.at("V20").c_str(), 1);
+  //     // close
+  //     return;
+  //   }
   /*
-   * 4.1.1o which i guess is oxidizer
+   * 4.0.3 which i guess is oxidizer
    * open v34
    * 10 seconds later
    * close v34
@@ -145,23 +161,118 @@ void mach::dispatchValve(const std::string& name , int handle) {
    * 7 seconds later
    * close v33
    */
-  if (name == "411o") {
+  if (name == "403") {
     // open v34
     LJM_eWriteName(handle, vlj.at("V34").c_str(), 0);
-    std::this_thread::sleep_for(10s);
+    if (sleepOrAbort(10s)) return;
     // close v34
     LJM_eWriteName(handle, vlj.at("V34").c_str(), 1);
     // open v30
     LJM_eWriteName(handle, vlj.at("V30").c_str(), 0);
-    std::this_thread::sleep_for(3s);
+    if (sleepOrAbort(3s)) return;
     // close v30 and v31 and open v33
     LJM_eWriteName(handle, vlj.at("V30").c_str(), 1);
     LJM_eWriteName(handle, vlj.at("V31").c_str(), 1);
-    LJM_eWriteName(handle, vlj.at("V33_NO").c_str(), 0);
-    std::this_thread::sleep_for(7s);
-    LJM_eWriteName(handle, vlj.at("V33_NO").c_str(), 1);
+    LJM_eWriteName(handle, vlj.at("V33").c_str(), 0);
+    if (sleepOrAbort(7s)) return;
+    LJM_eWriteName(handle, vlj.at("V33").c_str(), 1);
     return;
   };
+
+  /*
+   * 4.0.3A which i guess is oxidizer
+   * open v34
+   * 10 seconds later
+   * close v34
+   * open v30 preferably at same time (t-0)
+   * 3 seconds later
+   * close v30
+   * close v31 preferably at the same time
+   * open v33 preferably also at the same time
+   * 7 seconds later
+   * close v33
+   */
+  if (name == "403a") {
+    // open v34
+    LJM_eWriteName(handle, vlj.at("V34").c_str(), 0);
+    if (sleepOrAbort(10s)) return;
+    // close v34
+    LJM_eWriteName(handle, vlj.at("V34").c_str(), 1);
+    // open v30
+    LJM_eWriteName(handle, vlj.at("V30").c_str(), 0);
+    if (sleepOrAbort(7s)) return;
+    // close v30 and v31 and open v33
+    LJM_eWriteName(handle, vlj.at("V30").c_str(), 1);
+    LJM_eWriteName(handle, vlj.at("V31").c_str(), 1);
+    LJM_eWriteName(handle, vlj.at("V33").c_str(), 0);
+    if (sleepOrAbort(3s)) return;
+    LJM_eWriteName(handle, vlj.at("V33").c_str(), 1);
+    return;
+  };
+
+  
+  /*
+   * Ignition sequence
+   * Turn on ingnitor
+   */
+  // if (name == "ign") {
+  //   // Turn on igitor
+  //   LJM_eWriteName(FastJack, "DIO6", 0);
+
+  //   return;
+  // };
+
+  /*
+   * 5.0.2 Hot Fire sequence
+   * open v34
+   * 10 seconds later
+   * Turn on ingnitor
+   * Once ignitor reaches 900C
+   * close v34
+   * open v20
+   * open v30 preferably at same time (t-0)
+   * 4.5 seconds later
+   * close v30
+   * open v33
+   * 2.5 seconds later
+   * close v20 preferably at the same time
+   * open v22 preferably also at the same time
+   * 3 seconds later
+   * close v33
+   * close v22
+   * close v31
+   * close v10
+   */
+  if (name == "502") {
+    // open v34
+    LJM_eWriteName(handle, vlj.at("V34").c_str(), 0);
+    if (sleepOrAbort(5s)) return;
+    // Turn on igitor and wait until thermocouple reaches 900C
+    LJM_eWriteName(FastJack, "DIO6", 0);
+    while(state->lj.ignval < 365){
+      if (sleepOrAbort(1us)) return;
+    }
+    // close v34, open v20 and open v30
+    LJM_eWriteName(handle, vlj.at("V34").c_str(), 1);
+    LJM_eWriteName(handle, vlj.at("V20").c_str(), 0);
+    LJM_eWriteName(handle, vlj.at("V30").c_str(), 0);
+    if (sleepOrAbort(4.5s)) return;
+    // close v30 and open v33
+    LJM_eWriteName(handle, vlj.at("V30").c_str(), 1);
+    LJM_eWriteName(handle, vlj.at("V33").c_str(), 0);
+    if (sleepOrAbort(2.5s)) return;
+    // close v20 and open v22
+    LJM_eWriteName(handle, vlj.at("V20").c_str(), 1);
+    LJM_eWriteName(handle, vlj.at("V22").c_str(), 0);
+    if (sleepOrAbort(3s)) return;
+    LJM_eWriteName(handle, vlj.at("V33").c_str(), 1);
+    LJM_eWriteName(handle, vlj.at("V22").c_str(), 1);
+    LJM_eWriteName(handle, vlj.at("V31").c_str(), 1);
+    LJM_eWriteName(handle, vlj.at("V10").c_str(), 1);
+
+    return;
+  };
+
   /*
    * 4.1.1 which i guess is oxidizer final
    * open v34
@@ -212,13 +323,14 @@ void mach::dispatchValve(const std::string& name , int handle) {
     else
       LJM_eWriteName(handle, mach::vlj.at(valve).c_str(), 1);
   }
+  return;
 }
 
 void mach::SocketConn::start() { _read(); }
 
 mach::SocketConn::SocketConn(ba::any_io_executor const &ioContext,
-                             std::stop_source &stopSource, const int &lj)
-    : _s(ioContext), _ss(stopSource), labjack(lj){};
+                             std::stop_source &stopSource, const int &lj, std::shared_ptr<State> &st)
+    : _s(ioContext), _ss(stopSource), labjack(lj), _st(st){};
 
 void mach::SocketConn::input() {
   std::string val;
@@ -227,20 +339,61 @@ void mach::SocketConn::input() {
       std::lock_guard<std::mutex> l(coutm);
       std::cout << val << std::endl;
     }
-    if (val == "kill"){
-      auto test = pool.get_executor();
-      pool.stop();
-      pool.join();
+    if (val == "abort") {
+      poolptr->stop();
+      std::cout<<"past stop" <<std::endl;
+      {
+        std::lock_guard<std::mutex> lock(abort_mutex);
+        abort_flag.store(true);
+      }
+      abort_cv.notify_all();
+      poolptr->join();
+      std::cout<<"past join" <<std::endl;
+      poolptr.reset();
+      abort_flag.store(false);
+      std::cout<<"past reset" <<std::endl;
+      poolptr = std::make_shared<ba::thread_pool>(5);
+      std::cout<<"past shared" <<std::endl;
+      LJM_eWriteName(labjack, mach::vlj.at("V10").c_str(), 1);
+      LJM_eWriteName(labjack, mach::vlj.at("V21").c_str(), 1);
+      LJM_eWriteName(labjack, mach::vlj.at("V20").c_str(), 1);
+      LJM_eWriteName(labjack, mach::vlj.at("V30").c_str(), 1);
+      LJM_eWriteName(labjack, mach::vlj.at("V31").c_str(), 1);
+      LJM_eWriteName(labjack, mach::vlj.at("V32").c_str(), 1);
+      LJM_eWriteName(labjack, mach::vlj.at("V34").c_str(), 1);
+      LJM_eWriteName(labjack, mach::vlj.at("V36").c_str(), 1);
+      LJM_eWriteName(labjack, mach::vlj.at("V37").c_str(), 1);
+      LJM_eWriteName(labjack, mach::vlj.at("V11_NO").c_str(), 0);
+      LJM_eWriteName(labjack, mach::vlj.at("V12_NO").c_str(), 1);
+      LJM_eWriteName(labjack, mach::vlj.at("V22").c_str(), 1);
+      LJM_eWriteName(labjack, mach::vlj.at("V23_NO").c_str(), 1);
+      LJM_eWriteName(labjack, mach::vlj.at("V33").c_str(), 1);
+      LJM_eWriteName(labjack, mach::vlj.at("V35_NO").c_str(), 1);
+      LJM_eWriteName(labjack, mach::vlj.at("V38_NO").c_str(), 0);
+
+
+
+      // LJM_eWriteName(labjack, mach::vlj.at("V10").c_str(), 0);
+      // LJM_eWriteName(labjack, mach::vlj.at("V12_NO").c_str(), 1);
+      // LJM_eWriteName(labjack, mach::vlj.at("V38_NO").c_str(), 1);
+      // LJM_eWriteName(labjack, mach::vlj.at("V11_NO").c_str(), 1);
+      // LJM_eWriteName(labjack, mach::vlj.at("V33").c_str(), 0);
+      // LJM_eWriteName(labjack, mach::vlj.at("V22").c_str(), 0);
+      // if (sleepOrAbort(3s)) return;
+      // LJM_eWriteName(labjack, mach::vlj.at("V33").c_str(), 1);
+      // LJM_eWriteName(labjack, mach::vlj.at("V22").c_str(), 1);
+      // LJM_eWriteName(labjack, mach::vlj.at("V16").c_str(), 1);
+      // LJM_eWriteName(labjack, mach::vlj.at("V12_NO").c_str(), 0);
+      
+      std::cout<<" ABORT DONE LOL" <<std::endl;
       return;
     }
-      ba::post(pool, [this, val](){
-        dispatchValve(val, labjack);
-      });
-//      std::lock_guard<std::mutex> lock(sigm);
-//      vData = val;
-//      isString = true;
-//    sigcondition.notify_all();
-
+    ba::post(poolptr->get_executor(),
+             [this, val]() { dispatchValve(val, labjack, _st); });
+    //      std::lock_guard<std::mutex> lock(sigm);
+    //      vData = val;
+    //      isString = true;
+    //    sigcondition.notify_all();
   }
 }
 
@@ -281,7 +434,7 @@ void mach::SocketConn::_write() {
 
 mach::Server::Server(ba::io_context &ioContext, std::stop_source &stopSource,
                      const std::shared_ptr<State> &st, const int &lj)
-    : _ioc(ioContext), _ss(stopSource), _st(st), labjack(lj){
+    : _ioc(ioContext), _ss(stopSource), _st(st), labjack(lj) {
   _acc.bind({{}, PORT});
   _acc.set_option(ba::ip::tcp::acceptor::reuse_address());
   _acc.listen();
@@ -312,7 +465,7 @@ size_t mach::Server::reg(const std::shared_ptr<SocketConn> &c) {
 }
 
 void mach::Server::accept() {
-  auto sess = std::make_shared<SocketConn>(_acc.get_executor(), _ss, labjack);
+  auto sess = std::make_shared<SocketConn>(_acc.get_executor(), _ss, labjack, _st);
   _acc.async_accept(sess->_s, [this, sess](boost::system::error_code ec) {
     auto endpoint = ec ? ba::ip::tcp::endpoint{} : sess->_s.remote_endpoint();
     std::lock_guard<std::mutex> l(coutm);

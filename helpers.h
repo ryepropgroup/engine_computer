@@ -15,13 +15,15 @@ namespace bs = boost::signals2;
 using json = nlohmann::json;
 using namespace std::chrono_literals;
 
-extern std::mutex sigm;
-extern ba::thread_pool pool;
-extern std::condition_variable sigcondition;
-extern std::string vData;
-extern std::atomic<bool> isString;
+// extern ba::thread_pool pool;
+extern std::shared_ptr<ba::thread_pool> poolptr;
 extern std::atomic<bool> enabled;
 extern std::condition_variable suspend_write;
+extern int FastJack;
+extern std::condition_variable abort_cv;
+extern std::atomic<bool> abort_flag;
+extern std::mutex abort_mutex;
+
 namespace mach {
 using Timestamp = uint64_t;
 Timestamp now();
@@ -52,15 +54,17 @@ struct Sensor;
 struct LJSensors;
 struct SocketConn;
 struct Server;
-inline unsigned short PORT = 6970;
+inline unsigned short PORT = 6959;
 
 uint64_t sToMs(uint32_t seconds);
 void sleep(uint64_t milliseconds);
-void dispatchValve(const std::string &name, int handle);
 
 const char **vectorToChar(const std::vector<std::string> &stringVector);
 
 const double *vectorToDouble(const std::vector<double> &doubleVector);
+
+template<typename Rep, typename Period>
+bool sleepOrAbort(std::chrono::duration<Rep, Period> duration);
 
 struct Sensor {
   Sensor(std::string name, std::vector<std::string> params,
@@ -80,8 +84,8 @@ struct Sensor {
  * p21 -> AIN 2
  * p32 -> AIN 3
  * p10 -> AIN 4
- * TC 1 -> AIN 7
- * TC 2 -> AIN 9
+ * TC 1 (actuslly t2)-> AIN 7
+ * TC 2  (actuslly t3)-> AIN 9
  * p22 -> AIN 11
  *
  * labjack 2
@@ -123,8 +127,8 @@ struct LJSensors {
       std::string("AIN7"),
       std::vector<std::string>{"AIN7_EF_INDEX", "AIN7_EF_CONFIG_B",
                                "AIN7_EF_CONFIG_D", "AIN7_EF_CONFIG_E",
-                               "AIN7_EF_CONFIG_A", "AIN7_NEGATIVE_CH"},
-      std::vector<double>{22, 60052, 1.0, 0.0, 1, 1});
+                               "AIN7_EF_CONFIG_A"},
+      std::vector<double>{22, 60052, 1.0, 0.0, 1});
 
   mach::Sensor *t2 =
       new Sensor(std::string("AIN9"),
@@ -133,25 +137,25 @@ struct LJSensors {
                      "AIN9_EF_CONFIG_E", "AIN9_EF_CONFIG_A"},
                  std::vector<double>{22, 60052, 1.0, 0.0, 1});
   mach::Sensor *pinj =
-      new Sensor(std::string("AIN0"), std::vector<std::string>{"AIN0_RANGE"},
-                 std::vector<double>{10});
-  mach::Sensor *lc = new Sensor(std::string("AIN2"),
-                                std::vector<std::string>{"AIN2_NEGATIVE_CH"},
-                                std::vector<double>{3.0});
-  mach::Sensor *inj1 =
-      new Sensor(std::string("AIN5"), std::vector<std::string>{"AIN5_RANGE"},
-                 std::vector<double>{0.1});
-  mach::Sensor *inj2 =
-      new Sensor(std::string("AIN6"), std::vector<std::string>{"AIN6_RANGE"},
-                 std::vector<double>{0.1});
-  mach::Sensor *ign =
       new Sensor(std::string("AIN4"), std::vector<std::string>{"AIN4_RANGE"},
-                 std::vector<double>{0.1});
+                 std::vector<double>{10});
+  mach::Sensor *lc = new Sensor(std::string("AIN0"),
+                                std::vector<std::string>{"AIN0_NEGATIVE_CH"},
+                                std::vector<double>{1.0});
+  mach::Sensor *inj1 =
+      new Sensor(std::string("AIN10"), std::vector<std::string>{"AIN10_RANGE", "AIN10_NEGATIVE_CH"},
+                 std::vector<double>{0.1, 11.0});
+  mach::Sensor *inj2 =
+      new Sensor(std::string("AIN8"), std::vector<std::string>{"AIN8_RANGE", "AIN8_NEGATIVE_CH"},
+                 std::vector<double>{0.1, 9.0});
+  mach::Sensor *ign =
+      new Sensor(std::string("AIN6"), std::vector<std::string>{"AIN6_RANGE", "AIN6_NEGATIVE_CH"},
+                 std::vector<double>{0.1, 7.0});
   mach::Sensor *p20 = // p20
-      new Sensor(std::string("AIN1"), std::vector<std::string>{"AIN1_RANGE"},
+      new Sensor(std::string("AIN3"), std::vector<std::string>{"AIN3_RANGE"},
                  std::vector<double>{10});
   mach::Sensor *p30 = // p30
-      new Sensor(std::string("AIN7"), std::vector<std::string>{"AIN7_RANGE"},
+      new Sensor(std::string("AIN2"), std::vector<std::string>{"AIN2_RANGE"},
                  std::vector<double>{10});
 };
 
@@ -240,18 +244,19 @@ public:
   }
 };
 
+void dispatchValve(const std::string &name, int handle, std::shared_ptr<State> &state);
 struct SocketConn : std::enable_shared_from_this<SocketConn> {
   explicit SocketConn(ba::any_io_executor const &ioContext,
-                      std::stop_source &stopSource, const int &lj);
+                      std::stop_source &stopSource, const int &lj, std::shared_ptr<State> &st);
 
   void start();
 
-  void send(const std::string msg, const bool immediate = false);
+  void send(std::string msg, bool immediate = false);
 
 private:
   void input();
 
-  bool nq(const std::string msg, const bool immediate);
+  bool nq(std::string msg, bool immediate);
 
   // return true if messages are pending post-dequeue
   bool dq();
@@ -266,6 +271,7 @@ private:
   ba::ip::tcp::socket _s;
   bs::scoped_connection _sig;
   std::stop_source _ss;
+  std::shared_ptr<State> _st;
   int labjack;
 };
 

@@ -1,3 +1,5 @@
+/build/
+/_deps/*
 /cmake-build-debug/
 /cmake-build-gcc/
 /.idea
@@ -8,3 +10,5 @@
 /CMakeCache.txt
 /CMakeFiles
 *.cmake
+/build/
+*.csv
